@@ -790,8 +790,11 @@ class _CollectPaymentScreenState extends State<CollectPaymentScreen> {
   /// Expected amount = collected + discount + exemption (conceptually).
   /// remaining = expected total - paid - discount; 0 if exempt. Used to hide done payments and cap collect.
   double _getRemainingAmount(Map<String, dynamic> payment) {
-    final property = payment['property'];
-    final expectedTotal = ((property?['propertyType']?['price'] ?? property?['propertyType']?['Price'] ?? 0) * (property?['areaSize'] ?? property?['AreaSize'] ?? 0)).toDouble();
+    final property = payment['property'] ?? payment['Property'];
+    final propType = property?['propertyType'] ?? property?['PropertyType'];
+    final price = (propType?['price'] ?? propType?['Price'] ?? 0).toDouble();
+    final area = (property?['areaSize'] ?? property?['AreaSize'] ?? 0).toDouble();
+    final expectedTotal = price * area;
     final paidAmount = (property?['paidAmount'] ?? property?['PaidAmount'] ?? 0).toDouble();
     final discountAmount = (payment['discountAmount'] ?? payment['DiscountAmount'] ?? 0).toDouble();
     final isExempt = payment['isExempt'] == true || payment['IsExempt'] == true;
@@ -807,16 +810,19 @@ class _CollectPaymentScreenState extends State<CollectPaymentScreen> {
   }
 
   Widget _buildPaymentCard(Map<String, dynamic> payment, bool isCollecting) {
-    final amount = payment['amount'] ?? 0;
-    final currency = payment['currency'] ?? 'USD';
-    final property = payment['property'];
-    final status = payment['status'];
-    final paymentDate = payment['paymentDate'];
+    final amount = payment['amount'] ?? payment['Amount'] ?? 0;
+    final currency = payment['currency'] ?? payment['Currency'] ?? 'USD';
+    final property = payment['property'] ?? payment['Property'];
+    final status = payment['status'] ?? payment['Status'];
+    final paymentDate = payment['paymentDate'] ?? payment['PaymentDate'];
     
-    // Get payment tracking info; expected = collected + discount + exemption (remaining = expected - paid - discount, 0 if exempt)
+    // Get payment tracking info; support both camelCase and PascalCase from API
+    final propType = property?['propertyType'] ?? property?['PropertyType'];
+    final price = (propType?['price'] ?? propType?['Price'] ?? 0).toDouble();
+    final area = (property?['areaSize'] ?? property?['AreaSize'] ?? 0).toDouble();
+    final expectedAmount = price * area;
     final paidAmount = (property?['paidAmount'] ?? property?['PaidAmount'] ?? 0).toDouble();
     final paymentStatus = property?['paymentStatus'] ?? property?['PaymentStatus'] ?? 'Pending';
-    final expectedAmount = ((property?['propertyType']?['price'] ?? property?['propertyType']?['Price'] ?? 0) * (property?['areaSize'] ?? property?['AreaSize'] ?? 0)).toDouble();
     final discountAmount = (payment['discountAmount'] ?? payment['DiscountAmount'] ?? 0).toDouble();
     final isExempt = payment['isExempt'] == true || payment['IsExempt'] == true;
     final remainingAmount = _getRemainingAmount(payment);
@@ -1015,21 +1021,21 @@ class _CollectPaymentScreenState extends State<CollectPaymentScreen> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        property['streetAddress'] ?? 'N/A',
+                        property['streetAddress'] ?? property['StreetAddress'] ?? 'N/A',
                         style: const TextStyle(fontWeight: FontWeight.w500),
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 8),
-                if (property['owner'] != null && property['owner']['name'] != null)
-                  Row(
-                    children: [
-                      const Icon(Icons.person, size: 16, color: Colors.grey),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'Owner: ${property['owner']['name']}',
+                if ((property['owner'] ?? property['Owner']) != null) ...[
+                Row(
+                  children: [
+                    const Icon(Icons.person, size: 16, color: Colors.grey),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Owner: ${(property['owner'] ?? property['Owner'])['name'] ?? (property['owner'] ?? property['Owner'])['Name'] ?? 'N/A'}',
                           style: const TextStyle(fontSize: 13),
                         ),
                       ),
