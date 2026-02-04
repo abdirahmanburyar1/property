@@ -5,7 +5,7 @@ import 'package:flutter/foundation.dart';
 /// Provides connectivity status. When [isOnline] is false, the app can show [NoInternetScreen].
 class ConnectivityProvider extends ChangeNotifier {
   final Connectivity _connectivity = Connectivity();
-  StreamSubscription<List<ConnectivityResult>>? _subscription;
+  StreamSubscription<ConnectivityResult>? _subscription;
 
   bool _isOnline = true;
   bool get isOnline => _isOnline;
@@ -16,21 +16,21 @@ class ConnectivityProvider extends ChangeNotifier {
 
   Future<void> _init() async {
     await _check();
-    _subscription = _connectivity.onConnectivityChanged.listen((List<ConnectivityResult> results) {
-      _updateFromResults(results);
+    _subscription = _connectivity.onConnectivityChanged.listen((ConnectivityResult result) {
+      _updateFromResult(result);
     });
   }
 
-  void _updateFromResults(List<ConnectivityResult> results) {
+  void _updateFromResult(ConnectivityResult result) {
     final wasOnline = _isOnline;
-    _isOnline = results.any((r) => r == ConnectivityResult.mobile || r == ConnectivityResult.wifi || r == ConnectivityResult.ethernet);
+    _isOnline = result == ConnectivityResult.mobile || result == ConnectivityResult.wifi || result == ConnectivityResult.ethernet;
     if (wasOnline != _isOnline) notifyListeners();
   }
 
   Future<void> _check() async {
     try {
-      final results = await _connectivity.checkConnectivity();
-      _updateFromResults(results);
+      final result = await _connectivity.checkConnectivity();
+      _updateFromResult(result);
     } catch (e) {
     }
   }

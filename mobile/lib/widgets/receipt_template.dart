@@ -375,6 +375,8 @@ class ReceiptPrintData {
     final status = paymentDetail['status'] ?? paymentData['status'];
     final discountAmount = (paymentData['discountAmount'] ?? paymentData['DiscountAmount'] ?? paymentDetail['discountAmount'] ?? paymentDetail['DiscountAmount'] ?? 0).toDouble();
     final discountReason = paymentData['discountReason'] ?? paymentData['DiscountReason'] ?? paymentDetail['discountReason'] ?? paymentDetail['DiscountReason'];
+    final isExempt = paymentData['isExempt'] == true || paymentData['IsExempt'] == true || paymentDetail['isExempt'] == true || paymentDetail['IsExempt'] == true;
+    final exemptionReason = paymentData['exemptionReason'] ?? paymentData['ExemptionReason'] ?? paymentDetail['exemptionReason'] ?? paymentDetail['ExemptionReason'];
     
     StringBuffer buffer = StringBuffer();
     
