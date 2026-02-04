@@ -1,0 +1,11 @@
+C:\galkacyo\property\backend\PropertyRegistration.Core\bin\Debug\net8.0\PropertyRegistration.Core.deps.json
+C:\galkacyo\property\backend\PropertyRegistration.Core\bin\Debug\net8.0\PropertyRegistration.Core.dll
+C:\galkacyo\property\backend\PropertyRegistration.Core\bin\Debug\net8.0\PropertyRegistration.Core.pdb
+C:\galkacyo\property\backend\PropertyRegistration.Core\obj\Debug\net8.0\PropertyRegistration.Core.GeneratedMSBuildEditorConfig.editorconfig
+C:\galkacyo\property\backend\PropertyRegistration.Core\obj\Debug\net8.0\PropertyRegistration.Core.AssemblyInfoInputs.cache
+C:\galkacyo\property\backend\PropertyRegistration.Core\obj\Debug\net8.0\PropertyRegistration.Core.AssemblyInfo.cs
+C:\galkacyo\property\backend\PropertyRegistration.Core\obj\Debug\net8.0\PropertyRegistration.Core.csproj.CoreCompileInputs.cache
+C:\galkacyo\property\backend\PropertyRegistration.Core\obj\Debug\net8.0\PropertyRegistration.Core.dll
+C:\galkacyo\property\backend\PropertyRegistration.Core\obj\Debug\net8.0\refint\PropertyRegistration.Core.dll
+C:\galkacyo\property\backend\PropertyRegistration.Core\obj\Debug\net8.0\PropertyRegistration.Core.pdb
+C:\galkacyo\property\backend\PropertyRegistration.Core\obj\Debug\net8.0\ref\PropertyRegistration.Core.dll

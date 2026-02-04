@@ -1,0 +1,11 @@
+#!/bin/bash
+REPO=/home/cloud-user/property
+export GIT_DIR=$REPO
+export GIT_WORK_TREE=$REPO
+while read oldrev newrev refname; do
+  if [ "$refname" = "refs/heads/master" ]; then
+    git checkout -f master
+    echo "Updated $REPO with master"
+  fi
+done
+exit 0

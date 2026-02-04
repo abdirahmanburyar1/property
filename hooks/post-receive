@@ -1,0 +1,30 @@
+#!/bin/bash
+# Bare repo at /home/cloud-user/property. Checkout into the SAME path so files update on push.
+# Hooks live at /home/cloud-user/property/hooks/
+#
+# On the VPS: cp hooks/post-receive.sample hooks/post-receive && chmod +x hooks/post-receive
+#
+# If push closes the connection, SSH to VPS and check: cat /home/cloud-user/property/hook-errors.log
+
+REPO=/home/cloud-user/property
+LOG=$REPO/hook-errors.log
+
+exec 2>>"$LOG"
+echo "--- $(date) post-receive ---" >>"$LOG"
+
+export GIT_DIR=$REPO
+export GIT_WORK_TREE=$REPO
+cd "$REPO" || exit 0
+
+while read oldrev newrev refname; do
+  if [ "$refname" = "refs/heads/master" ]; then
+    if git -c core.bare=false checkout -f master >>"$LOG" 2>&1; then
+      echo "Updated $REPO with master"
+    else
+      echo "checkout failed, see $LOG"
+    fi
+  fi
+done
+
+exit 0
+

@@ -1,0 +1,49 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: property_postgres
+    environment:
+      POSTGRES_DB: property_registration
+      POSTGRES_USER: property_user
+      POSTGRES_PASSWORD: property_password
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U property_user -d property_registration"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - property_network
+    restart: unless-stopped
+
+  rabbitmq:
+    image: rabbitmq:3.12-management-alpine
+    container_name: property_rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: property_user
+      RABBITMQ_DEFAULT_PASS: property_password
+      RABBITMQ_DEFAULT_VHOST: property_vhost
+    ports:
+      - "5672:5672"     # AMQP port
+      - "15672:15672"   # Management UI port
+    volumes:
+      - ./data/rabbitmq:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - property_network
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+networks:
+  property_network:
+    driver: bridge

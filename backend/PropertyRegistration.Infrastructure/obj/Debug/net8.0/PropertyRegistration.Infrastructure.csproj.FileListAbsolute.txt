@@ -1,0 +1,15 @@
+C:\galkacyo\property\backend\PropertyRegistration.Infrastructure\bin\Debug\net8.0\PropertyRegistration.Infrastructure.deps.json
+C:\galkacyo\property\backend\PropertyRegistration.Infrastructure\bin\Debug\net8.0\PropertyRegistration.Infrastructure.dll
+C:\galkacyo\property\backend\PropertyRegistration.Infrastructure\bin\Debug\net8.0\PropertyRegistration.Infrastructure.pdb
+C:\galkacyo\property\backend\PropertyRegistration.Infrastructure\bin\Debug\net8.0\PropertyRegistration.Core.dll
+C:\galkacyo\property\backend\PropertyRegistration.Infrastructure\bin\Debug\net8.0\PropertyRegistration.Core.pdb
+C:\galkacyo\property\backend\PropertyRegistration.Infrastructure\obj\Debug\net8.0\PropertyRegistration.Infrastructure.csproj.AssemblyReference.cache
+C:\galkacyo\property\backend\PropertyRegistration.Infrastructure\obj\Debug\net8.0\PropertyRegistration.Infrastructure.GeneratedMSBuildEditorConfig.editorconfig
+C:\galkacyo\property\backend\PropertyRegistration.Infrastructure\obj\Debug\net8.0\PropertyRegistration.Infrastructure.AssemblyInfoInputs.cache
+C:\galkacyo\property\backend\PropertyRegistration.Infrastructure\obj\Debug\net8.0\PropertyRegistration.Infrastructure.AssemblyInfo.cs
+C:\galkacyo\property\backend\PropertyRegistration.Infrastructure\obj\Debug\net8.0\PropertyRegistration.Infrastructure.csproj.CoreCompileInputs.cache
+C:\galkacyo\property\backend\PropertyRegistration.Infrastructure\obj\Debug\net8.0\Property.5B6EC29A.Up2Date
+C:\galkacyo\property\backend\PropertyRegistration.Infrastructure\obj\Debug\net8.0\PropertyRegistration.Infrastructure.dll
+C:\galkacyo\property\backend\PropertyRegistration.Infrastructure\obj\Debug\net8.0\refint\PropertyRegistration.Infrastructure.dll
+C:\galkacyo\property\backend\PropertyRegistration.Infrastructure\obj\Debug\net8.0\PropertyRegistration.Infrastructure.pdb
+C:\galkacyo\property\backend\PropertyRegistration.Infrastructure\obj\Debug\net8.0\ref\PropertyRegistration.Infrastructure.dll

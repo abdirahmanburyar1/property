@@ -1,0 +1,142 @@
+# Proxied by nginx: backend 9000, frontend 9001
+# apiproperty.magooltech.com -> 127.0.0.1:9000
+# property.magooltech.com    -> 127.0.0.1:9001
+#
+# On VPS, create data dirs first: mkdir -p /home/cloud-user/data/postgres /home/cloud-user/data/rabbitmq /home/cloud-user/data/redis
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: property_postgres_prod
+    environment:
+      POSTGRES_DB: property_registration
+      POSTGRES_USER: property_user
+      POSTGRES_PASSWORD: property_password
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - /home/cloud-user/data/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U property_user -d property_registration"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - property_network_prod
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  rabbitmq:
+    image: rabbitmq:3.12-management-alpine
+    container_name: property_rabbitmq_prod
+    environment:
+      RABBITMQ_DEFAULT_USER: property_user
+      RABBITMQ_DEFAULT_PASS: property_password
+      RABBITMQ_DEFAULT_VHOST: property_vhost
+    ports:
+      - "127.0.0.1:5673:5672"
+      - "127.0.0.1:15673:15672"
+    volumes:
+      - /home/cloud-user/data/rabbitmq:/var/lib/rabbitmq
+    healthcheck:
+      # Official RabbitMQ check; needs long start_period (Alpine can be slow)
+      test: ["CMD-SHELL", "rabbitmq-diagnostics -q check_running || exit 1"]
+      interval: 30s
+      timeout: 30s
+      retries: 10
+      start_period: 120s
+    networks:
+      - property_network_prod
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  redis:
+    image: redis:7-alpine
+    container_name: property_redis_prod
+    ports:
+      - "127.0.0.1:6380:6379"
+    volumes:
+      - /home/cloud-user/data/redis:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - property_network_prod
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: property_backend_prod
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:9000
+      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=property_registration;Username=property_user;Password=property_password
+      - RabbitMQ__Host=rabbitmq
+      - RabbitMQ__Port=5672
+      - RabbitMQ__Username=property_user
+      - RabbitMQ__Password=property_password
+      - RabbitMQ__VirtualHost=property_vhost
+      - Cors__AllowedOrigins__0=https://property.magooltech.com
+      - Cors__AllowedOrigins__1=http://property.magooltech.com
+    ports:
+      - "127.0.0.1:9000:9000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - property_network_prod
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        - VITE_API_URL=https://apiproperty.magooltech.com/api
+    container_name: property_frontend_prod
+    ports:
+      - "127.0.0.1:9001:9001"
+    networks:
+      - property_network_prod
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  property_network_prod:
+    driver: bridge
+    name: property_network_prod

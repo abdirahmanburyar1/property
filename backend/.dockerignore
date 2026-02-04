@@ -1,0 +1,41 @@
+# Build outputs
+**/bin/
+**/obj/
+**/publish/
+*.dll
+*.pdb
+*.cache
+
+# IDE files
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+
+# Git
+.git/
+.gitignore
+
+# Documentation
+*.md
+README*
+
+# Test files
+**/test/
+**/tests/
+**/*Test*.cs
+**/*Tests*.cs
+
+# Logs
+*.log
+logs/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Docker
+Dockerfile*
+docker-compose*.yml
+.dockerignore
