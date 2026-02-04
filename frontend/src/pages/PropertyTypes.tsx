@@ -78,10 +78,12 @@ export default function PropertyTypes() {
         setError('Price must be a valid number');
         return;
       }
+      // Preserve up to 3 decimal places (e.g. 0.042) - avoid rounding to 2 decimals
+      const priceRounded = Math.round(priceValue * 1000) / 1000;
 
       const payload = {
         name: formData.name.trim(),
-        price: priceValue,
+        price: priceRounded,
         unit: formData.unit.trim(),
       };
 
@@ -108,7 +110,7 @@ export default function PropertyTypes() {
     setEditingType(type);
     setFormData({
       name: type.name || '',
-      price: type.price?.toString() || '',
+      price: type.price?.toString() ?? '',
       unit: type.unit || 'm',
     });
     setShowForm(true);

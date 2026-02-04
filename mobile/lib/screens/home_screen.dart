@@ -385,9 +385,9 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             const SizedBox(height: 20),
             
-            // Collected Amount Section
+            // Commission Section
             Text(
-              'My Collected Amount',
+              'Your Commission',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
@@ -505,39 +505,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                     ),
                                   ),
                                 ),
-                              const SizedBox(height: 16),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                                decoration: BoxDecoration(
-                                  color: Colors.blue[50],
-                                  borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(color: Colors.blue[200]!),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(Icons.receipt_long, size: 18, color: Colors.blue[700]),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      '$_currency ${_formatAmount(_collectedAmount)} collected',
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w600,
-                                        color: Colors.blue[700],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(height: 6),
-                              Text(
-                                '$_paymentCount ${_paymentCount == 1 ? 'payment' : 'payments'} in period',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey[600],
-                                ),
-                              ),
-                              if (_commissionRatePercent == 0 && _collectedAmount > 0)
+                              if (_commissionRatePercent == 0 && _commissionAmount > 0)
                                 Padding(
                                   padding: const EdgeInsets.only(top: 12),
                                   child: Text(

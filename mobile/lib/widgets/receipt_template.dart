@@ -32,6 +32,8 @@ class ReceiptTemplate extends StatelessWidget {
     final property = paymentData['property'];
     final collector = paymentDetail['collectedBy'] ?? paymentData['collector'];
     final status = paymentDetail['status'] ?? paymentData['status'];
+    final discountAmount = (paymentData['discountAmount'] ?? paymentData['DiscountAmount'] ?? paymentDetail['discountAmount'] ?? paymentDetail['DiscountAmount'] ?? 0).toDouble();
+    final discountReason = paymentData['discountReason'] ?? paymentData['DiscountReason'] ?? paymentDetail['discountReason'] ?? paymentDetail['DiscountReason'];
 
     // POS receipt width is typically 58mm or 80mm (we'll design for 58mm - 384 pixels)
     return Container(
@@ -349,6 +351,8 @@ class ReceiptPrintData {
     final property = paymentData['property'];
     final collector = paymentDetail['collectedBy'] ?? paymentData['collector'] ?? paymentDetail['collector'];
     final status = paymentDetail['status'] ?? paymentData['status'];
+    final discountAmount = (paymentData['discountAmount'] ?? paymentData['DiscountAmount'] ?? paymentDetail['discountAmount'] ?? paymentDetail['DiscountAmount'] ?? 0).toDouble();
+    final discountReason = paymentData['discountReason'] ?? paymentData['DiscountReason'] ?? paymentDetail['discountReason'] ?? paymentDetail['DiscountReason'];
     
     StringBuffer buffer = StringBuffer();
     
@@ -436,12 +440,26 @@ class ReceiptPrintData {
       buffer.write(ESCPOSCommands.bold(true));
       buffer.write('TOTAL PAID: $currency ${totalAmount.toStringAsFixed(2)}\n');
       buffer.write(ESCPOSCommands.bold(false));
+      if (discountAmount > 0) {
+        buffer.write('Discount: $currency ${discountAmount.toStringAsFixed(2)}\n');
+        if (discountReason != null && discountReason.toString().trim().isNotEmpty) {
+          buffer.write('Reason: ${discountReason.toString().trim()}\n');
+        }
+      }
     } else {
       buffer.write('Date: ${_formatDateTime(paymentDate)}\n');
       buffer.write('Method: Mobile Money\n');
       if (status != null) {
         final statusName = status['name'] ?? status['Name'] ?? 'N/A';
         buffer.write('Status: $statusName\n');
+      }
+      if (discountAmount > 0) {
+        buffer.write(ESCPOSCommands.bold(true));
+        buffer.write('Discount: $currency ${discountAmount.toStringAsFixed(2)}\n');
+        buffer.write(ESCPOSCommands.bold(false));
+        if (discountReason != null && discountReason.toString().trim().isNotEmpty) {
+          buffer.write('Reason: ${discountReason.toString().trim()}\n');
+        }
       }
     }
     
