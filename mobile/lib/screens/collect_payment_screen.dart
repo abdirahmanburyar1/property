@@ -1101,6 +1101,7 @@ class _CollectPaymentScreenState extends State<CollectPaymentScreen> {
                   ),
                 ),
             ],
+          ],
           ),
         ),
     );
