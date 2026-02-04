@@ -34,6 +34,8 @@ class ReceiptTemplate extends StatelessWidget {
     final status = paymentDetail['status'] ?? paymentData['status'];
     final discountAmount = (paymentData['discountAmount'] ?? paymentData['DiscountAmount'] ?? paymentDetail['discountAmount'] ?? paymentDetail['DiscountAmount'] ?? 0).toDouble();
     final discountReason = paymentData['discountReason'] ?? paymentData['DiscountReason'] ?? paymentDetail['discountReason'] ?? paymentDetail['DiscountReason'];
+    final isExempt = paymentData['isExempt'] == true || paymentData['IsExempt'] == true || paymentDetail['isExempt'] == true || paymentDetail['IsExempt'] == true;
+    final exemptionReason = paymentData['exemptionReason'] ?? paymentData['ExemptionReason'] ?? paymentDetail['exemptionReason'] ?? paymentDetail['ExemptionReason'];
 
     // POS receipt width is typically 58mm or 80mm (we'll design for 58mm - 384 pixels)
     return Container(
@@ -131,11 +133,31 @@ class ReceiptTemplate extends StatelessWidget {
             const SizedBox(height: 8),
             const Divider(thickness: 1),
             _buildRow('TOTAL PAID:', '$currency ${amount.toStringAsFixed(2)}', isBold: true),
+            if (discountAmount > 0) ...[
+              _buildRow('Discount:', '$currency ${discountAmount.toStringAsFixed(2)}', isBold: true),
+              if (discountReason != null && discountReason.toString().trim().isNotEmpty)
+                _buildRow('Reason:', discountReason.toString().trim()),
+            ],
+            if (isExempt) ...[
+              _buildRow('Exemption:', 'Yes', isBold: true),
+              if (exemptionReason != null && exemptionReason.toString().trim().isNotEmpty)
+                _buildRow('Reason:', exemptionReason.toString().trim()),
+            ],
           ] else ...[
             _buildRow('Date:', _formatDateTime(paymentDate)),
             _buildRow('Method:', 'Mobile Money'),
             if (status != null)
               _buildRow('Status:', status['name'] ?? 'N/A'),
+            if (discountAmount > 0) ...[
+              _buildRow('Discount:', '$currency ${discountAmount.toStringAsFixed(2)}', isBold: true),
+              if (discountReason != null && discountReason.toString().trim().isNotEmpty)
+                _buildRow('Reason:', discountReason.toString().trim()),
+            ],
+            if (isExempt) ...[
+              _buildRow('Exemption:', 'Yes', isBold: true),
+              if (exemptionReason != null && exemptionReason.toString().trim().isNotEmpty)
+                _buildRow('Reason:', exemptionReason.toString().trim()),
+            ],
           ],
           
           const SizedBox(height: 12),
@@ -446,6 +468,12 @@ class ReceiptPrintData {
           buffer.write('Reason: ${discountReason.toString().trim()}\n');
         }
       }
+      if (isExempt) {
+        buffer.write('Exemption: Yes\n');
+        if (exemptionReason != null && exemptionReason.toString().trim().isNotEmpty) {
+          buffer.write('Reason: ${exemptionReason.toString().trim()}\n');
+        }
+      }
     } else {
       buffer.write('Date: ${_formatDateTime(paymentDate)}\n');
       buffer.write('Method: Mobile Money\n');
@@ -459,6 +487,14 @@ class ReceiptPrintData {
         buffer.write(ESCPOSCommands.bold(false));
         if (discountReason != null && discountReason.toString().trim().isNotEmpty) {
           buffer.write('Reason: ${discountReason.toString().trim()}\n');
+        }
+      }
+      if (isExempt) {
+        buffer.write(ESCPOSCommands.bold(true));
+        buffer.write('Exemption: Yes\n');
+        buffer.write(ESCPOSCommands.bold(false));
+        if (exemptionReason != null && exemptionReason.toString().trim().isNotEmpty) {
+          buffer.write('Reason: ${exemptionReason.toString().trim()}\n');
         }
       }
     }

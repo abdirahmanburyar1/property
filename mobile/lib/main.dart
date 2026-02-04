@@ -4,8 +4,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'providers/auth_provider.dart';
 import 'providers/property_provider.dart';
 import 'providers/payment_provider.dart';
+import 'providers/connectivity_provider.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
+import 'screens/no_internet_screen.dart';
 import 'services/api_service.dart';
 import 'services/printer_service.dart';
 
@@ -43,6 +45,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        ChangeNotifierProvider(create: (_) => ConnectivityProvider()),
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => PropertyProvider()),
         ChangeNotifierProvider(create: (_) => PaymentProvider()),
@@ -69,8 +72,25 @@ class MyApp extends StatelessWidget {
             fillColor: Colors.grey[50],
           ),
         ),
-        home: const AuthWrapper(),
+        home: const ConnectivityWrapper(),
       ),
+    );
+  }
+}
+
+/// When offline, shows [NoInternetScreen]. Otherwise shows [AuthWrapper].
+class ConnectivityWrapper extends StatelessWidget {
+  const ConnectivityWrapper({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<ConnectivityProvider>(
+      builder: (context, connectivity, _) {
+        if (!connectivity.isOnline) {
+          return const NoInternetScreen();
+        }
+        return const AuthWrapper();
+      },
     );
   }
 }

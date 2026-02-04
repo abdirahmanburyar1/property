@@ -44,6 +44,7 @@ export default function Reports() {
     split: { companySharePercent: number; municipalitySharePercent: number; companyShare: number; municipalityShare: number };
   } | null>(null);
   const [settlementLoading, setSettlementLoading] = useState(false);
+  const [revenueSplitPolicy, setRevenueSplitPolicy] = useState<{ companySharePercent: number; municipalitySharePercent: number } | null>(null);
 
   const loadDailySettlement = async () => {
     setSettlementLoading(true);
@@ -59,6 +60,11 @@ export default function Reports() {
 
   useEffect(() => {
     apiClient.get('/payments/statuses').then((res) => setPaymentStatuses(res.data || []));
+    apiClient.get('/revenuesplit').then((res) => {
+      const cp = res.data?.companySharePercent ?? res.data?.CompanySharePercent;
+      const mp = res.data?.municipalitySharePercent ?? res.data?.MunicipalitySharePercent;
+      if (cp != null && mp != null) setRevenueSplitPolicy({ companySharePercent: Number(cp), municipalitySharePercent: Number(mp) });
+    }).catch(() => setRevenueSplitPolicy(null));
     apiClient.get('/users/lookups/roles').then((rolesRes) => {
       const roles = rolesRes.data || [];
       const collectorRole = roles.find((r: any) => (r.code || r.Code || '').toUpperCase() === 'COLLECTOR');
@@ -135,6 +141,12 @@ export default function Reports() {
   const totalDiscount = reportData.reduce((sum, p) => sum + (p.discountAmount ?? p.DiscountAmount ?? 0), 0);
   const exemptCount = reportData.filter((p) => p.isExempt ?? p.IsExempt).length;
   const currency = reportData[0]?.currency || reportData[0]?.Currency || 'USD';
+
+  // Report revenue split: company % is applied to gross (total amount); discounts are not counted on the company.
+  const reportNetAfterDiscount = totalAmount - totalDiscount;
+  const reportCompanyPercent = revenueSplitPolicy?.companySharePercent ?? 0;
+  const reportCompanyShare = reportData.length > 0 ? (reportCompanyPercent / 100) * totalAmount : 0;
+  const reportMunicipalityShare = reportData.length > 0 ? Math.max(0, reportNetAfterDiscount - reportCompanyShare) : 0;
 
   const summaryCards = reportData.length > 0
     ? [
@@ -358,6 +370,33 @@ export default function Reports() {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Report revenue split: company % on gross; discounts not counted on company */}
+      {reportData.length > 0 && revenueSplitPolicy && (reportCompanyPercent > 0 || revenueSplitPolicy.municipalitySharePercent > 0) && (
+        <div className="rounded-2xl border border-gray-200/80 bg-white p-5 shadow-soft">
+          <h3 className="text-sm font-semibold text-gray-900 mb-1">Report revenue split</h3>
+          <p className="text-xs text-gray-500 mb-4">Company share is based on gross amount (before discount). Discounts are not counted on the company.</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="rounded-xl border border-gray-100 bg-gray-50/80 p-4">
+              <p className="text-xs font-medium uppercase tracking-wider text-gray-500">Gross (total amount)</p>
+              <p className="mt-1 text-lg font-bold text-gray-900">{currency} {totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+            </div>
+            <div className="rounded-xl border border-gray-100 bg-gray-50/80 p-4">
+              <p className="text-xs font-medium uppercase tracking-wider text-gray-500">Net (after discount)</p>
+              <p className="mt-1 text-lg font-bold text-gray-900">{currency} {reportNetAfterDiscount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+            </div>
+            <div className="rounded-xl border border-blue-200 bg-blue-50/80 p-4">
+              <p className="text-xs font-medium uppercase tracking-wider text-blue-700">Company ({reportCompanyPercent}% of gross)</p>
+              <p className="mt-1 text-lg font-bold text-blue-800">{currency} {reportCompanyShare.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+              <p className="mt-0.5 text-xs text-blue-600">Discounts not applied to company</p>
+            </div>
+            <div className="rounded-xl border border-emerald-200 bg-emerald-50/80 p-4">
+              <p className="text-xs font-medium uppercase tracking-wider text-emerald-700">Dowlada Hoose (remainder of net)</p>
+              <p className="mt-1 text-lg font-bold text-emerald-800">{currency} {reportMunicipalityShare.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+            </div>
+          </div>
         </div>
       )}
 

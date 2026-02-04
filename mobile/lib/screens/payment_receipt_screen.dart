@@ -123,6 +123,9 @@ class _PaymentReceiptScreenState extends State<PaymentReceiptScreen> {
                      (paymentHistory.isNotEmpty ? (paymentHistory[0]['currency'] ?? paymentHistory[0]['Currency'] ?? 'USD') : 'USD');
     final transactionRef = paymentDetail['transactionReference'] ?? 'N/A';
     final installmentNumber = paymentDetail['installmentNumber'] ?? 1;
+    final discountAmount = (widget.paymentData['discountAmount'] ?? widget.paymentData['DiscountAmount'] ?? 0).toDouble();
+    final hasDiscount = discountAmount > 0;
+    final hasExemption = widget.paymentData['isExempt'] == true || widget.paymentData['IsExempt'] == true;
 
     return Scaffold(
       appBar: AppBar(
@@ -204,6 +207,64 @@ class _PaymentReceiptScreenState extends State<PaymentReceiptScreen> {
                     ],
                   ),
                 ),
+                if (hasDiscount || hasExemption) ...[
+                  const SizedBox(height: 10),
+                  Wrap(
+                    alignment: WrapAlignment.center,
+                    spacing: 8,
+                    runSpacing: 6,
+                    children: [
+                      if (hasDiscount)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.25),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: Colors.white54, width: 1),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.discount, color: Colors.amber[200], size: 18),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Discount: $currency ${discountAmount.toStringAsFixed(2)}',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      if (hasExemption)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.25),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: Colors.white54, width: 1),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.verified_user, color: Colors.white.withOpacity(0.9), size: 18),
+                              const SizedBox(width: 6),
+                              const Text(
+                                'Exemption applied',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                    ],
+                  ),
+                ],
               ],
             ),
           ),
