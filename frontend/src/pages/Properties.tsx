@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { fetchProperties, deleteProperty } from '../store/slices/propertySlice';
+import apiClient from '../config/api';
 import Swal from 'sweetalert2';
 import {
   MapPinIcon,
@@ -13,13 +14,20 @@ import {
   TrashIcon,
 } from '@heroicons/react/24/outline';
 
+const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
+
 export default function Properties() {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
-  const { properties, isLoading, error } = useAppSelector((state) => state.property);
+  const { properties, isLoading, error, pagination } = useAppSelector((state) => state.property);
   const [searchQuery, setSearchQuery] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [filterStatusId, setFilterStatusId] = useState<string>('');
+  const [filterPropertyTypeId, setFilterPropertyTypeId] = useState<string>('');
+  const [propertyStatuses, setPropertyStatuses] = useState<Array<{ id: string; name: string }>>([]);
+  const [propertyTypes, setPropertyTypes] = useState<Array<{ id: string; name: string }>>([]);
+  const [pageSize, setPageSize] = useState(20);
 
   const isPropertyApproved = (property: any) => {
     const name = getNestedProperty(getNestedProperty(property, 'Status', 'status'), 'Name', 'name');
@@ -49,8 +57,30 @@ export default function Properties() {
     }
   };
 
+  const loadProperties = (page: number, size: number, statusId: string, typeId: string, search: string) => {
+    const params: { page: number; pageSize: number; statusId?: string; propertyTypeId?: string; ownerName?: string; plateNumber?: string } = {
+      page,
+      pageSize: size,
+    };
+    if (statusId) params.statusId = statusId;
+    if (typeId) params.propertyTypeId = typeId;
+    if (search.trim()) params.ownerName = search.trim();
+    dispatch(fetchProperties(params));
+  };
+
   useEffect(() => {
-    dispatch(fetchProperties());
+    apiClient.get('/properties/statuses').then((r) => {
+      const list = Array.isArray(r.data) ? r.data : [];
+      setPropertyStatuses(list.map((s: any) => ({ id: s.id ?? s.Id ?? '', name: s.name ?? s.Name ?? '' })));
+    }).catch(() => setPropertyStatuses([]));
+    apiClient.get('/propertytypes').then((r) => {
+      const list = Array.isArray(r.data) ? r.data : [];
+      setPropertyTypes(list.map((t: any) => ({ id: t.id ?? t.Id ?? '', name: t.name ?? t.Name ?? '' })));
+    }).catch(() => setPropertyTypes([]));
+  }, []);
+
+  useEffect(() => {
+    loadProperties(1, pageSize, filterStatusId, filterPropertyTypeId, searchQuery);
   }, [dispatch]);
 
   // Debug: Log properties when they change
@@ -121,31 +151,40 @@ export default function Properties() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Status
                 </label>
-                <select className="input py-2.5 w-full">
-                  <option>All Statuses</option>
-                  <option>Draft</option>
-                  <option>Pending</option>
-                  <option>Approved</option>
-                  <option>Rejected</option>
+                <select
+                  className="input py-2.5 w-full"
+                  value={filterStatusId}
+                  onChange={(e) => setFilterStatusId(e.target.value)}
+                >
+                  <option value="">All Statuses</option>
+                  {propertyStatuses.map(s => (
+                    <option key={s.id} value={s.id}>{s.name}</option>
+                  ))}
                 </select>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Property Type
                 </label>
-                <select className="input py-2.5 w-full">
-                  <option>All Types</option>
-                  <option>Residential</option>
-                  <option>Commercial</option>
-                  <option>Industrial</option>
-                  <option>Land</option>
+                <select
+                  className="input py-2.5 w-full"
+                  value={filterPropertyTypeId}
+                  onChange={(e) => setFilterPropertyTypeId(e.target.value)}
+                >
+                  <option value="">All Types</option>
+                  {propertyTypes.map(t => (
+                    <option key={t.id} value={t.id}>{t.name}</option>
+                  ))}
                 </select>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Date Range
-                </label>
-                <input type="date" className="input py-2.5 w-full" />
+              <div className="sm:col-span-3 flex items-end">
+                <button
+                  type="button"
+                  onClick={() => loadProperties(1, pageSize, filterStatusId, filterPropertyTypeId, searchQuery)}
+                  className="btn-primary px-4 py-2.5"
+                >
+                  Apply filters
+                </button>
               </div>
             </div>
           )}
@@ -155,13 +194,31 @@ export default function Properties() {
       {/* Properties List */}
       <div className="card">
         <div className="card-header">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <h3 className="text-lg font-semibold text-gray-900">
               All Properties
             </h3>
-            <span className="text-sm text-gray-500">
-              {properties.length} {properties.length === 1 ? 'property' : 'properties'}
-            </span>
+            <div className="flex items-center gap-4 flex-wrap">
+              <span className="text-sm text-gray-500">
+                {pagination.totalCount} {pagination.totalCount === 1 ? 'property' : 'properties'}
+              </span>
+              <label className="flex items-center gap-2 text-sm text-gray-700">
+                Per page
+                <select
+                  className="input py-1.5 pl-2 pr-8 text-sm"
+                  value={pagination.pageSize}
+                  onChange={(e) => {
+                    const size = Number(e.target.value);
+                    setPageSize(size);
+                    loadProperties(1, size, filterStatusId, filterPropertyTypeId, searchQuery);
+                  }}
+                >
+                  {PAGE_SIZE_OPTIONS.map(n => (
+                    <option key={n} value={n}>{n}</option>
+                  ))}
+                </select>
+              </label>
+            </div>
           </div>
         </div>
         <div className="card-body p-0">
@@ -180,7 +237,7 @@ export default function Properties() {
               </h3>
               <p className="text-sm text-gray-500 mb-6">{error}</p>
               <button 
-                onClick={() => dispatch(fetchProperties())}
+                onClick={() => loadProperties(1, pageSize, filterStatusId, filterPropertyTypeId, searchQuery)}
                 className="btn-secondary px-6 py-3"
               >
                 Try Again
@@ -329,6 +386,34 @@ export default function Properties() {
           )}
         </div>
       </div>
+
+      {/* Pagination */}
+      {!isLoading && !error && pagination.totalCount > 0 && (
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-2">
+          <div className="text-sm text-gray-500">
+            Showing {(pagination.page - 1) * pagination.pageSize + 1} to {Math.min(pagination.page * pagination.pageSize, pagination.totalCount)} of {pagination.totalCount} properties
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => loadProperties(pagination.page - 1, pagination.pageSize, filterStatusId, filterPropertyTypeId, searchQuery)}
+              disabled={pagination.page <= 1}
+              className="btn-secondary px-4 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Previous
+            </button>
+            <span className="text-sm text-gray-600 px-2">
+              Page {pagination.page} of {Math.max(1, pagination.totalPages)}
+            </span>
+            <button
+              onClick={() => loadProperties(pagination.page + 1, pagination.pageSize, filterStatusId, filterPropertyTypeId, searchQuery)}
+              disabled={pagination.page >= pagination.totalPages}
+              className="btn-secondary px-4 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

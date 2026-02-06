@@ -44,6 +44,14 @@ interface PropertyState {
     city?: string;
     statusId?: string;
     propertyTypeId?: string;
+    ownerName?: string;
+    plateNumber?: string;
+  };
+  pagination: {
+    page: number;
+    pageSize: number;
+    totalCount: number;
+    totalPages: number;
   };
 }
 
@@ -53,14 +61,38 @@ const initialState: PropertyState = {
   isLoading: false,
   error: null,
   filters: {},
+  pagination: {
+    page: 1,
+    pageSize: 20,
+    totalCount: 0,
+    totalPages: 0,
+  },
+};
+
+export type FetchPropertiesParams = {
+  page?: number;
+  pageSize?: number;
+  statusId?: string;
+  propertyTypeId?: string;
+  city?: string;
+  ownerName?: string;
+  plateNumber?: string;
 };
 
 // Async thunks
 export const fetchProperties = createAsyncThunk(
   'property/fetchProperties',
-  async (_, { rejectWithValue }) => {
+  async (params: FetchPropertiesParams = {}, { rejectWithValue }) => {
     try {
-      const response = await apiClient.get('/properties');
+      const queryParams = new URLSearchParams();
+      if (params.page != null) queryParams.append('page', params.page.toString());
+      if (params.pageSize != null) queryParams.append('pageSize', params.pageSize.toString());
+      if (params.statusId) queryParams.append('statusId', params.statusId);
+      if (params.propertyTypeId) queryParams.append('propertyTypeId', params.propertyTypeId);
+      if (params.city) queryParams.append('city', params.city);
+      if (params.ownerName) queryParams.append('ownerName', params.ownerName);
+      if (params.plateNumber) queryParams.append('plateNumber', params.plateNumber);
+      const response = await apiClient.get(`/properties?${queryParams.toString()}`);
       return response.data;
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch properties');
@@ -139,8 +171,13 @@ const propertySlice = createSlice({
       })
       .addCase(fetchProperties.fulfilled, (state, action) => {
         state.isLoading = false;
-        // Handle both paginated response (with data property) and array response
         state.properties = action.payload.data || (Array.isArray(action.payload) ? action.payload : []);
+        state.pagination = {
+          page: action.payload.page ?? 1,
+          pageSize: action.payload.pageSize ?? 20,
+          totalCount: action.payload.totalCount ?? state.properties.length,
+          totalPages: action.payload.totalPages ?? 1,
+        };
       })
       .addCase(fetchProperties.rejected, (state, action) => {
         state.isLoading = false;

@@ -75,15 +75,26 @@ const initialState: PaymentState = {
 // Async thunks
 export const fetchPayments = createAsyncThunk(
   'payment/fetchPayments',
-  async (params: { page?: number; pageSize?: number; propertyId?: string; collectorId?: string; statusId?: string; isExempt?: boolean } = {}, { rejectWithValue }) => {
+  async (params: {
+    page?: number;
+    pageSize?: number;
+    propertyId?: string;
+    collectorId?: string;
+    statusId?: string;
+    isExempt?: boolean;
+    startDate?: string;
+    endDate?: string;
+  } = {}, { rejectWithValue }) => {
     try {
       const queryParams = new URLSearchParams();
-      if (params.page) queryParams.append('page', params.page.toString());
-      if (params.pageSize) queryParams.append('pageSize', params.pageSize.toString());
+      if (params.page != null) queryParams.append('page', params.page.toString());
+      if (params.pageSize != null) queryParams.append('pageSize', params.pageSize.toString());
       if (params.propertyId) queryParams.append('propertyId', params.propertyId);
       if (params.collectorId) queryParams.append('collectorId', params.collectorId);
       if (params.statusId) queryParams.append('statusId', params.statusId);
       if (params.isExempt !== undefined) queryParams.append('isExempt', params.isExempt.toString());
+      if (params.startDate) queryParams.append('startDate', params.startDate);
+      if (params.endDate) queryParams.append('endDate', params.endDate);
 
       const response = await apiClient.get(`/payments?${queryParams.toString()}`);
       return response.data;

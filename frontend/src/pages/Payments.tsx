@@ -11,6 +11,8 @@ import {
   XCircleIcon,
 } from '@heroicons/react/24/outline';
 
+const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
+
 export default function Payments() {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
@@ -19,15 +21,32 @@ export default function Payments() {
   const [showFilters, setShowFilters] = useState(false);
   type PaymentStatusOption = { id?: string; name?: string; colorCode?: string };
   const [paymentStatuses, setPaymentStatuses] = useState<PaymentStatusOption[]>([] as PaymentStatusOption[]);
+  const [filterStatusId, setFilterStatusId] = useState<string>('');
+  const [filterIsExempt, setFilterIsExempt] = useState<string>('');
+  const [pageSize, setPageSize] = useState(20);
+
+  const loadPayments = (page: number, size: number, statusId: string, isExempt: string) => {
+    const params: { page: number; pageSize: number; statusId?: string; isExempt?: boolean } = {
+      page,
+      pageSize: size,
+    };
+    if (statusId) params.statusId = statusId;
+    if (isExempt === 'true') params.isExempt = true;
+    if (isExempt === 'false') params.isExempt = false;
+    dispatch(fetchPayments(params));
+  };
 
   useEffect(() => {
-    dispatch(fetchPayments({ page: 1, pageSize: 20 }));
     dispatch(fetchPaymentStatuses()).then((result: any) => {
       if (result.payload) {
         setPaymentStatuses(result.payload);
       }
     });
   }, [dispatch]);
+
+  useEffect(() => {
+    loadPayments(1, pageSize, filterStatusId, filterIsExempt);
+  }, []);
 
   // Debug: Log payments when they change
   useEffect(() => {
@@ -116,10 +135,14 @@ export default function Payments() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Status
                 </label>
-                <select className="input py-2.5 w-full">
-                  <option>All Statuses</option>
+                <select
+                  className="input py-2.5 w-full"
+                  value={filterStatusId}
+                  onChange={(e) => setFilterStatusId(e.target.value)}
+                >
+                  <option value="">All Statuses</option>
                   {paymentStatuses.map(status => (
-                    <option key={status.id} value={status.id}>{status.name}</option>
+                    <option key={status.id} value={status.id ?? ''}>{status.name}</option>
                   ))}
                 </select>
               </div>
@@ -127,11 +150,24 @@ export default function Payments() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Exemption
                 </label>
-                <select className="input py-2.5 w-full">
-                  <option>All</option>
+                <select
+                  className="input py-2.5 w-full"
+                  value={filterIsExempt}
+                  onChange={(e) => setFilterIsExempt(e.target.value)}
+                >
+                  <option value="">All</option>
                   <option value="true">Exempted</option>
                   <option value="false">Not Exempted</option>
                 </select>
+              </div>
+              <div className="sm:col-span-3 flex items-end">
+                <button
+                  type="button"
+                  onClick={() => loadPayments(1, pageSize, filterStatusId, filterIsExempt)}
+                  className="btn-primary px-4 py-2.5"
+                >
+                  Apply filters
+                </button>
               </div>
             </div>
           )}
@@ -141,13 +177,31 @@ export default function Payments() {
       {/* Payments List */}
       <div className="card">
         <div className="card-header">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <h3 className="text-lg font-semibold text-gray-900">
               All Payments
             </h3>
-            <span className="text-sm text-gray-500">
-              {pagination.totalCount} {pagination.totalCount === 1 ? 'payment' : 'payments'}
-            </span>
+            <div className="flex items-center gap-4 flex-wrap">
+              <span className="text-sm text-gray-500">
+                {pagination.totalCount} {pagination.totalCount === 1 ? 'payment' : 'payments'}
+              </span>
+              <label className="flex items-center gap-2 text-sm text-gray-700">
+                Per page
+                <select
+                  className="input py-1.5 pl-2 pr-8 text-sm"
+                  value={pagination.pageSize}
+                  onChange={(e) => {
+                    const size = Number(e.target.value);
+                    setPageSize(size);
+                    loadPayments(1, size, filterStatusId, filterIsExempt);
+                  }}
+                >
+                  {PAGE_SIZE_OPTIONS.map(n => (
+                    <option key={n} value={n}>{n}</option>
+                  ))}
+                </select>
+              </label>
+            </div>
           </div>
         </div>
         <div className="card-body p-0">
@@ -166,7 +220,7 @@ export default function Payments() {
               </h3>
               <p className="text-sm text-gray-500 mb-6">{error}</p>
               <button 
-                onClick={() => dispatch(fetchPayments({ page: 1, pageSize: 20 }))}
+                onClick={() => loadPayments(1, pageSize, filterStatusId, filterIsExempt)}
                 className="btn-secondary px-6 py-3"
               >
                 Try Again
@@ -297,21 +351,24 @@ export default function Payments() {
       </div>
 
       {/* Pagination */}
-      {pagination.totalPages > 1 && (
-        <div className="flex items-center justify-between">
+      {!isLoading && !error && pagination.totalCount > 0 && (
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-2">
           <div className="text-sm text-gray-500">
             Showing {(pagination.page - 1) * pagination.pageSize + 1} to {Math.min(pagination.page * pagination.pageSize, pagination.totalCount)} of {pagination.totalCount} payments
           </div>
-          <div className="flex gap-2">
+          <div className="flex items-center gap-2">
             <button
-              onClick={() => dispatch(fetchPayments({ page: pagination.page - 1, pageSize: pagination.pageSize }))}
-              disabled={pagination.page === 1}
+              onClick={() => loadPayments(pagination.page - 1, pagination.pageSize, filterStatusId, filterIsExempt)}
+              disabled={pagination.page <= 1}
               className="btn-secondary px-4 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Previous
             </button>
+            <span className="text-sm text-gray-600 px-2">
+              Page {pagination.page} of {Math.max(1, pagination.totalPages)}
+            </span>
             <button
-              onClick={() => dispatch(fetchPayments({ page: pagination.page + 1, pageSize: pagination.pageSize }))}
+              onClick={() => loadPayments(pagination.page + 1, pagination.pageSize, filterStatusId, filterIsExempt)}
               disabled={pagination.page >= pagination.totalPages}
               className="btn-secondary px-4 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >

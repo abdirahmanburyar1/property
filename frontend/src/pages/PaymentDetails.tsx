@@ -1081,11 +1081,31 @@ export default function PaymentDetails() {
 
             {/* Payment Appointment */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-              <div className="p-6 border-b border-gray-200">
+              <div className="p-6 border-b border-gray-200 flex items-center justify-between gap-4 flex-wrap">
                 <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                   <CalendarDaysIcon className="h-5 w-5 text-primary-600" />
                   Payment Appointment
                 </h3>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditForm(prev => ({
+                      ...prev,
+                      appointmentDate: (() => {
+                        const apt = payment.appointmentDate ?? payment.AppointmentDate;
+                        if (!apt) return '';
+                        const d = typeof apt === 'string' ? new Date(apt) : apt;
+                        return isNaN(d.getTime()) ? '' : d.toISOString().slice(0, 16);
+                      })(),
+                      appointmentNotes: payment.appointmentNotes ?? payment.AppointmentNotes ?? '',
+                    }));
+                    setShowEditModal(true);
+                  }}
+                  className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-primary-700 bg-primary-50 border border-primary-200 rounded-lg hover:bg-primary-100 transition-colors"
+                >
+                  <PencilIcon className="h-4 w-4" />
+                  {(payment.appointmentDate ?? payment.AppointmentDate) || (payment.appointmentNotes ?? payment.AppointmentNotes) ? 'Edit appointment' : 'Set appointment'}
+                </button>
               </div>
               <div className="p-6">
                 {(payment.appointmentDate ?? payment.AppointmentDate) || (payment.appointmentNotes ?? payment.AppointmentNotes) ? (

@@ -5,7 +5,6 @@ import {
   FunnelIcon,
   PrinterIcon,
   DocumentTextIcon,
-  XCircleIcon,
 } from '@heroicons/react/24/outline';
 
 function getNested(obj: any, ...keys: string[]): any {
@@ -17,17 +16,28 @@ function getNested(obj: any, ...keys: string[]): any {
   return null;
 }
 
+function collectorId(c: any): string {
+  const id = c?.id ?? c?.Id;
+  return id != null ? String(id) : '';
+}
+
+function collectorLabel(c: any): string {
+  const first = c?.firstName ?? c?.FirstName ?? '';
+  const last = c?.lastName ?? c?.LastName ?? '';
+  const name = [first, last].filter(Boolean).join(' ');
+  return name || (c?.email ?? c?.Email ?? '') || '—';
+}
+
 export default function PropertyNotices() {
   const [properties, setProperties] = useState<any[]>([]);
   const [sections, setSections] = useState<Array<{ id: string; name: string }>>([]);
   const [subSections, setSubSections] = useState<Array<{ id: string; name: string; sectionId?: string }>>([]);
-  const [collectors, setCollectors] = useState<Array<{ id: string; firstName: string; lastName: string }>>([]);
+  const [collectors, setCollectors] = useState<any[]>([]);
   const [sectionId, setSectionId] = useState<string>('');
   const [subSectionId, setSubSectionId] = useState<string>('');
   const [kontontriyeId, setKontontriyeId] = useState<string>('');
   const [year, setYear] = useState<number>(new Date().getFullYear());
   const [loading, setLoading] = useState(false);
-  const [noticeModal, setNoticeModal] = useState<{ property: any } | null>(null);
 
   useEffect(() => {
     apiClient.get('/sections').then((r) => setSections(r.data || [])).catch(() => setSections([]));
@@ -55,16 +65,21 @@ export default function PropertyNotices() {
     }
   }, [sectionId]);
 
-  const loadNotices = () => {
+  const loadNotices = (filters?: { sectionId: string; subSectionId: string; kontontriyeId: string }) => {
     setLoading(true);
-    const params: Record<string, string | number> = {
-      hasOutstandingOnly: 'true',
+    const section = filters?.sectionId ?? sectionId;
+    const sub = filters?.subSectionId ?? subSectionId;
+    const collector = filters?.kontontriyeId ?? kontontriyeId;
+    const params: Record<string, string | number | boolean> = {
+      hasOutstandingOnly: true,
       page: 1,
       pageSize: 500,
     };
-    if (sectionId) params.sectionId = sectionId;
-    if (subSectionId) params.subSectionId = subSectionId;
-    if (kontontriyeId) params.kontontriyeId = kontontriyeId;
+    if (section) params.sectionId = section;
+    if (sub) params.subSectionId = sub;
+    if (collector) {
+      params.kontontriyeId = collector;
+    }
     apiClient.get('/properties', { params })
       .then((r) => {
         const data = r.data?.data ?? r.data ?? [];
@@ -78,32 +93,39 @@ export default function PropertyNotices() {
     loadNotices();
   }, []);
 
-  const handleApplyFilters = (e: React.FormEvent) => {
+  const handleApplyFilters = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    loadNotices();
+    const form = e.currentTarget;
+    const sectionVal = (form.elements.namedItem('sectionId') as HTMLSelectElement | null)?.value ?? '';
+    const subVal = (form.elements.namedItem('subSectionId') as HTMLSelectElement | null)?.value ?? '';
+    const collectorVal = (form.elements.namedItem('kontontriyeId') as HTMLSelectElement | null)?.value ?? '';
+    setSectionId(sectionVal);
+    setSubSectionId(subVal);
+    setKontontriyeId(collectorVal);
+    loadNotices({ sectionId: sectionVal, subSectionId: subVal, kontontriyeId: collectorVal });
   };
-
-  const ownerName = (p: any) => getNested(p, 'owner', 'Owner')?.name ?? getNested(p, 'owner', 'Owner')?.Name ?? p.ownerName ?? '—';
-  const expected = (p: any) => {
-    const pt = getNested(p, 'propertyType', 'PropertyType');
-    const price = pt?.price ?? pt?.Price ?? 0;
-    const area = p.areaSize ?? p.AreaSize ?? 0;
-    return price * area;
-  };
-  const paid = (p: any) => (p.paidAmount ?? p.PaidAmount ?? 0) as number;
-  const amountDue = (p: any) => Math.max(0, expected(p) - paid(p));
-  const currency = (p: any) => p.currency || 'USD';
 
   return (
     <div className="space-y-6">
-      <div>
+      <style>{`
+        @media print {
+          body * { visibility: hidden !important; }
+          #property-notices-print-root,
+          #property-notices-print-root * { visibility: visible !important; }
+          #property-notices-print-root { position: absolute !important; left: 0 !important; top: 0 !important; right: 0 !important; background: white !important; padding: 0 !important; }
+          .no-print { display: none !important; }
+          .notice-row { break-inside: avoid; page-break-inside: avoid; }
+        }
+      `}</style>
+
+      <div className="no-print">
         <h1 className="text-3xl font-bold text-gray-900">Property tax notices</h1>
         <p className="mt-1 text-sm text-gray-600">
           Only properties with outstanding amount are listed. Notices are recurring yearly.
         </p>
       </div>
 
-      <form onSubmit={handleApplyFilters} className="card">
+      <form onSubmit={handleApplyFilters} className="card no-print">
         <div className="card-body">
           <div className="flex items-center gap-2 mb-4">
             <FunnelIcon className="h-5 w-5 text-gray-500" />
@@ -125,6 +147,7 @@ export default function PropertyNotices() {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Section</label>
               <select
+                name="sectionId"
                 className="input w-full"
                 value={sectionId}
                 onChange={(e) => setSectionId(e.target.value)}
@@ -138,6 +161,7 @@ export default function PropertyNotices() {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Subsection</label>
               <select
+                name="subSectionId"
                 className="input w-full"
                 value={subSectionId}
                 onChange={(e) => setSubSectionId(e.target.value)}
@@ -152,16 +176,20 @@ export default function PropertyNotices() {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Collector (Kontontriye)</label>
               <select
+                name="kontontriyeId"
                 className="input w-full"
                 value={kontontriyeId}
                 onChange={(e) => setKontontriyeId(e.target.value)}
               >
                 <option value="">All collectors</option>
-                {collectors.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {[c.firstName ?? c.FirstName, c.lastName ?? c.LastName].filter(Boolean).join(' ') || c.email ?? c.Email ?? c.id}
-                  </option>
-                ))}
+                {collectors.map((c) => {
+                  const id = collectorId(c);
+                  return (
+                    <option key={id || `collector-${collectors.indexOf(c)}`} value={id}>
+                      {collectorLabel(c)}
+                    </option>
+                  );
+                })}
               </select>
             </div>
           </div>
@@ -173,89 +201,47 @@ export default function PropertyNotices() {
         </div>
       </form>
 
-      <div className="card">
-        <div className="card-body">
-          {loading ? (
-            <div className="flex justify-center py-12">
-              <div className="animate-spin rounded-full h-10 w-10 border-2 border-primary-600 border-t-transparent" />
-            </div>
-          ) : properties.length === 0 ? (
-            <div className="text-center py-12 text-gray-500">
-              <DocumentTextIcon className="h-12 w-12 mx-auto text-gray-300 mb-3" />
-              <p>No properties with outstanding amount match the filters.</p>
-              <p className="mt-1 text-sm">Notices are only generated for properties that have an amount due.</p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-gray-200">
-                    <th className="text-left py-3 px-2 font-semibold text-gray-900">Plate</th>
-                    <th className="text-left py-3 px-2 font-semibold text-gray-900">Address</th>
-                    <th className="text-left py-3 px-2 font-semibold text-gray-900">Owner</th>
-                    <th className="text-right py-3 px-2 font-semibold text-gray-900">Amount due</th>
-                    <th className="text-right py-3 px-2 font-semibold text-gray-900">Notice</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {properties.map((p) => (
-                    <tr key={p.id} className="border-b border-gray-100 hover:bg-gray-50">
-                      <td className="py-3 px-2 font-medium">{p.plateNumber ?? p.PlateNumber ?? '—'}</td>
-                      <td className="py-3 px-2">{p.streetAddress ?? p.StreetAddress ?? '—'}</td>
-                      <td className="py-3 px-2">{ownerName(p)}</td>
-                      <td className="py-3 px-2 text-right font-semibold text-amber-800">
-                        {currency(p)} {amountDue(p).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </td>
-                      <td className="py-3 px-2 text-right">
-                        <button
-                          type="button"
-                          onClick={() => setNoticeModal({ property: p })}
-                          className="inline-flex items-center gap-1 rounded-lg bg-amber-100 px-3 py-1.5 text-sm font-semibold text-amber-800 hover:bg-amber-200"
-                        >
-                          <PrinterIcon className="h-4 w-4" />
-                          View / Print
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
+      <div className="no-print flex items-center justify-between gap-4">
+        <p className="text-sm text-gray-600">
+          {loading ? 'Loading…' : properties.length === 0 ? 'No properties match the filters.' : `${properties.length} notice(s).`}
+        </p>
+        {properties.length > 0 && (
+          <button
+            type="button"
+            onClick={() => window.print()}
+            className="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700"
+          >
+            <PrinterIcon className="h-5 w-5" />
+            Print all notices
+          </button>
+        )}
       </div>
 
-      {/* Notice modal (printable) */}
-      {noticeModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" role="dialog" aria-modal="true">
-          <style>{`
-            @media print {
-              body * { visibility: hidden !important; }
-              #property-notice-modal-print,
-              #property-notice-modal-print * { visibility: visible !important; }
-              #property-notice-modal-print { position: fixed !important; left: 0 !important; top: 0 !important; right: 0 !important; bottom: 0 !important; background: white !important; padding: 0 !important; overflow: visible !important; }
-              .property-notice-no-print { display: none !important; }
-            }
-          `}</style>
-          <div id="property-notice-modal-print" className="bg-white rounded-xl shadow-xl max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
-            <div className="property-notice-no-print flex items-center justify-between gap-3 p-4 border-b border-gray-200 shrink-0">
-              <h3 className="text-lg font-semibold text-gray-900">Property tax notice — {year}</h3>
-              <div className="flex items-center gap-2">
-                <button type="button" onClick={() => window.print()} className="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700">
-                  <PrinterIcon className="h-5 w-5" />
-                  Print
-                </button>
-                <button type="button" onClick={() => setNoticeModal(null)} className="rounded-lg border border-gray-300 bg-white p-2 text-gray-700 hover:bg-gray-50" aria-label="Close">
-                  <XCircleIcon className="h-5 w-5" />
-                </button>
-              </div>
-            </div>
-            <div className="overflow-y-auto p-4">
-              <PropertyTaxNoticeContent property={noticeModal.property} year={year} />
-            </div>
+      <div id="property-notices-print-root">
+        {loading ? (
+          <div className="flex justify-center py-12 no-print">
+            <div className="animate-spin rounded-full h-10 w-10 border-2 border-primary-600 border-t-transparent" />
           </div>
-        </div>
-      )}
+        ) : properties.length === 0 ? (
+          <div className="text-center py-12 text-gray-500 no-print">
+            <DocumentTextIcon className="h-12 w-12 mx-auto text-gray-300 mb-3" />
+            <p>No properties with outstanding amount match the filters.</p>
+            <p className="mt-1 text-sm">Notices are only generated for properties that have an amount due.</p>
+          </div>
+        ) : (
+          <table className="w-full text-left border-collapse">
+            <tbody>
+              {properties.map((p) => (
+                <tr key={p.id ?? p.Id} className="notice-row align-top">
+                  <td className="py-2 px-0 w-full">
+                    <PropertyTaxNoticeContent property={p} year={year} compact />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
     </div>
   );
 }
