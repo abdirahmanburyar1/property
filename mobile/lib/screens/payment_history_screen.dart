@@ -99,25 +99,34 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
                     itemCount: _payments.length,
                     itemBuilder: (context, index) {
                       final payment = _payments[index];
-                      final amount = payment['amount'] ?? 0;
-                      final currency = payment['currency'] ?? 'USD';
-                      final paymentMethod = payment['paymentMethod'] ?? 'N/A';
-                      final status = payment['status'] ?? 'UNKNOWN';
-                      final receiptNumber = payment['receiptNumber'] ?? 'N/A';
-                      final paymentDate = payment['paymentDate'] != null
+                      final amountRaw = payment['amount'] ?? payment['Amount'];
+                      final amount = (amountRaw is num) ? amountRaw.toDouble() : (double.tryParse(amountRaw?.toString() ?? '') ?? 0.0);
+                      final currency = payment['currency'] ?? payment['Currency'] ?? 'USD';
+                      final paymentMethodObj = payment['paymentMethod'] ?? payment['PaymentMethod'];
+                      final paymentMethod = paymentMethodObj is Map
+                          ? (paymentMethodObj['name'] ?? paymentMethodObj['Name'] ?? 'N/A').toString()
+                          : (paymentMethodObj?.toString() ?? 'N/A');
+                      final statusObj = payment['status'] ?? payment['Status'];
+                      final status = statusObj is Map
+                          ? (statusObj['name'] ?? statusObj['Name'] ?? 'UNKNOWN').toString()
+                          : (statusObj?.toString() ?? 'UNKNOWN');
+                      final receiptNumber = payment['receiptNumber'] ?? payment['ReceiptNumber'] ?? payment['transactionReference'] ?? payment['TransactionReference'] ?? 'N/A';
+                      final paymentDateRaw = payment['paymentDate'] ?? payment['PaymentDate'];
+                      final paymentDate = paymentDateRaw != null
                           ? DateFormat('dd/MM/yyyy HH:mm')
-                              .format(DateTime.parse(payment['paymentDate']))
+                              .format(DateTime.parse(paymentDateRaw.toString()))
                           : 'N/A';
 
-                      // Get property details
-                      final propertyId = payment['propertyId']?.toString();
+                      // Get property details (support both camelCase and PascalCase from API)
+                      final propertyId = (payment['propertyId'] ?? payment['PropertyId'])?.toString();
                       final property = _properties.firstWhere(
-                        (p) => p['id']?.toString() == propertyId,
+                        (p) => (p['id'] ?? p['Id'])?.toString() == propertyId,
                         orElse: () => {},
                       );
-                      final propertyAddress = property['streetAddress'] ?? 'Unknown Property';
-                      final ownerName = property['owner'] != null
-                          ? property['owner']['name'] ?? ''
+                      final propertyAddress = property['streetAddress'] ?? property['StreetAddress'] ?? 'Unknown Property';
+                      final owner = property['owner'] ?? property['Owner'];
+                      final ownerName = owner != null && owner is Map
+                          ? (owner['name'] ?? owner['Name'] ?? '').toString()
                           : '';
 
                       return Card(
@@ -235,19 +244,28 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
   }
 
   void _showPaymentDetails(Map<String, dynamic> payment, Map<String, dynamic> property) {
-    final amount = payment['amount'] ?? 0;
-    final currency = payment['currency'] ?? 'USD';
-    final paymentMethod = payment['paymentMethod'] ?? 'N/A';
-    final status = payment['status'] ?? 'UNKNOWN';
-    final receiptNumber = payment['receiptNumber'] ?? 'N/A';
-    final notes = payment['notes'] ?? '';
-    final paymentDate = payment['paymentDate'] != null
-        ? DateFormat('dd/MM/yyyy HH:mm').format(DateTime.parse(payment['paymentDate']))
+    final amountRaw = payment['amount'] ?? payment['Amount'];
+    final amount = (amountRaw is num) ? amountRaw.toDouble() : (double.tryParse(amountRaw?.toString() ?? '') ?? 0.0);
+    final currency = payment['currency'] ?? payment['Currency'] ?? 'USD';
+    final paymentMethodObj = payment['paymentMethod'] ?? payment['PaymentMethod'];
+    final paymentMethod = paymentMethodObj is Map
+        ? (paymentMethodObj['name'] ?? paymentMethodObj['Name'] ?? 'N/A').toString()
+        : (paymentMethodObj?.toString() ?? 'N/A');
+    final statusObj = payment['status'] ?? payment['Status'];
+    final status = statusObj is Map
+        ? (statusObj['name'] ?? statusObj['Name'] ?? 'UNKNOWN').toString()
+        : (statusObj?.toString() ?? 'UNKNOWN');
+    final receiptNumber = payment['receiptNumber'] ?? payment['ReceiptNumber'] ?? payment['transactionReference'] ?? payment['TransactionReference'] ?? 'N/A';
+    final notes = payment['notes'] ?? payment['Notes'] ?? '';
+    final paymentDateRaw = payment['paymentDate'] ?? payment['PaymentDate'];
+    final paymentDate = paymentDateRaw != null
+        ? DateFormat('dd/MM/yyyy HH:mm').format(DateTime.parse(paymentDateRaw.toString()))
         : 'N/A';
 
-    final propertyAddress = property['streetAddress'] ?? 'Unknown Property';
-    final ownerName = property['owner'] != null ? property['owner']['name'] ?? 'N/A' : 'N/A';
-    final ownerPhone = property['owner'] != null ? property['owner']['phone'] ?? 'N/A' : 'N/A';
+    final propertyAddress = property['streetAddress'] ?? property['StreetAddress'] ?? 'Unknown Property';
+    final owner = property['owner'] ?? property['Owner'];
+    final ownerName = owner != null && owner is Map ? (owner['name'] ?? owner['Name'] ?? 'N/A').toString() : 'N/A';
+    final ownerPhone = owner != null && owner is Map ? (owner['phone'] ?? owner['Phone'] ?? 'N/A').toString() : 'N/A';
 
     showModalBottomSheet(
       context: context,

@@ -194,10 +194,99 @@ export default function PaymentDetails() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
-          <p className="mt-4 text-gray-600">Loading payment details...</p>
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 pt-2 pb-6 px-0">
+        <div className="w-full space-y-6">
+          {/* Header skeleton */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <div className="h-10 w-10 rounded-lg bg-gray-200 animate-pulse" />
+                <div className="space-y-2">
+                  <div className="h-8 w-64 bg-gray-200 rounded animate-pulse" />
+                  <div className="h-4 w-48 bg-gray-100 rounded animate-pulse" />
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-3">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <div key={i} className="h-10 w-24 bg-gray-200 rounded-lg animate-pulse" />
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Overview cards skeleton */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div key={i} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="h-12 w-12 rounded-lg bg-gray-200 animate-pulse" />
+                  <div className="h-6 w-16 rounded-full bg-gray-200 animate-pulse" />
+                </div>
+                <div className="h-4 w-20 mb-2 bg-gray-100 rounded animate-pulse" />
+                <div className="h-8 w-24 bg-gray-200 rounded animate-pulse" />
+              </div>
+            ))}
+          </div>
+
+          {/* Payment progress skeleton */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="h-6 w-40 bg-gray-200 rounded animate-pulse" />
+              <div className="h-6 w-24 rounded-full bg-gray-200 animate-pulse" />
+            </div>
+            <div className="space-y-3">
+              <div className="flex justify-between">
+                <div className="h-4 w-16 bg-gray-100 rounded animate-pulse" />
+                <div className="h-4 w-12 bg-gray-100 rounded animate-pulse" />
+              </div>
+              <div className="h-3 w-full bg-gray-200 rounded-full animate-pulse" />
+              <div className="grid grid-cols-5 gap-4 pt-2">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <div key={i} className="h-4 bg-gray-100 rounded animate-pulse" />
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Main content grid skeleton */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Payment history skeleton */}
+            <div className="lg:col-span-2 space-y-6">
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+                <div className="p-6 border-b border-gray-200">
+                  <div className="flex items-center justify-between">
+                    <div className="h-6 w-40 bg-gray-200 rounded animate-pulse" />
+                    <div className="h-6 w-20 rounded-full bg-gray-200 animate-pulse" />
+                  </div>
+                </div>
+                <div className="p-6 space-y-4">
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <div key={i} className="flex gap-4">
+                      <div className="h-10 w-10 shrink-0 rounded-full bg-gray-200 animate-pulse" />
+                      <div className="flex-1 space-y-2">
+                        <div className="h-4 w-full max-w-xs bg-gray-200 rounded animate-pulse" />
+                        <div className="h-3 w-32 bg-gray-100 rounded animate-pulse" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+            {/* Property info skeleton */}
+            <div className="space-y-6">
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <div className="h-6 w-36 mb-4 bg-gray-200 rounded animate-pulse" />
+                <div className="space-y-3">
+                  {[1, 2, 3, 4, 5, 6].map((i) => (
+                    <div key={i} className="flex justify-between">
+                      <div className="h-4 w-24 bg-gray-100 rounded animate-pulse" />
+                      <div className="h-4 w-28 bg-gray-200 rounded animate-pulse" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -319,8 +408,8 @@ export default function PaymentDetails() {
   // Show receipt view
   if (showReceipt) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8 px-4">
-        <div className="max-w-4xl mx-auto">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 pt-2 pb-8 px-0">
+        <div className="w-full">
           <div className="flex items-center justify-between mb-6 print:hidden">
             <button
               onClick={() => setShowReceipt(false)}
@@ -410,8 +499,8 @@ export default function PaymentDetails() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-6 px-4">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 pt-2 pb-6 px-0">
+      <div className="w-full space-y-6">
         {/* Header */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
