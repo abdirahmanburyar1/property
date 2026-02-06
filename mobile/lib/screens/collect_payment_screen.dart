@@ -810,7 +810,8 @@ class _CollectPaymentScreenState extends State<CollectPaymentScreen> {
   }
 
   Widget _buildPaymentCard(Map<String, dynamic> payment, bool isCollecting) {
-    final amount = payment['amount'] ?? payment['Amount'] ?? 0;
+    final amountRaw = payment['amount'] ?? payment['Amount'];
+    final amount = (amountRaw is num) ? amountRaw.toDouble() : (double.tryParse(amountRaw?.toString() ?? '') ?? 0.0);
     final currency = payment['currency'] ?? payment['Currency'] ?? 'USD';
     final property = payment['property'] ?? payment['Property'];
     final status = payment['status'] ?? payment['Status'];
@@ -825,7 +826,11 @@ class _CollectPaymentScreenState extends State<CollectPaymentScreen> {
     final paymentStatus = property?['paymentStatus'] ?? property?['PaymentStatus'] ?? 'Pending';
     final discountAmount = (payment['discountAmount'] ?? payment['DiscountAmount'] ?? 0).toDouble();
     final isExempt = payment['isExempt'] == true || payment['IsExempt'] == true;
-    final remainingAmount = _getRemainingAmount(payment);
+    var remainingAmount = _getRemainingAmount(payment);
+    // When All Payments: if backend didn't send property totals, show payment amount instead of 0.00
+    if (remainingAmount < 0.01 && amount > 0) {
+      remainingAmount = amount;
+    }
     
     // Get plate number (handle both camelCase and PascalCase)
     final plateNumber = property != null 
@@ -918,7 +923,7 @@ class _CollectPaymentScreenState extends State<CollectPaymentScreen> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
-                            status['name'] ?? 'Pending',
+                            status is Map ? (status['name'] ?? status['Name'] ?? 'Pending').toString() : (status?.toString() ?? 'Pending'),
                             style: TextStyle(
                               color: Colors.orange[900],
                               fontSize: 12,

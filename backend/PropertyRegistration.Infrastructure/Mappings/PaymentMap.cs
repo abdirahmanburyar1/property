@@ -18,6 +18,8 @@ public class PaymentMap : BaseEntityMap<Payment>
         Map(x => x.PaymentMetadata).CustomType<JsonbType>();
         Map(x => x.PaymentDate).Not.Nullable();
         Map(x => x.CompletedAt);
+        Map(x => x.AppointmentDate);
+        Map(x => x.AppointmentNotes).Length(1000);
 
         // Discount fields
         Map(x => x.DiscountAmount).Not.Nullable().Precision(18).Scale(2);

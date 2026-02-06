@@ -19,6 +19,7 @@ import {
   BuildingOfficeIcon,
   IdentificationIcon,
   ShieldCheckIcon,
+  CalendarDaysIcon,
 } from '@heroicons/react/24/outline';
 import {
   CheckCircleIcon as CheckCircleIconSolid,
@@ -56,6 +57,8 @@ export default function PaymentDetails() {
     isExempt: false,
     exemptionReason: '',
     notes: '',
+    appointmentDate: '',
+    appointmentNotes: '',
   });
 
   useEffect(() => {
@@ -131,6 +134,7 @@ export default function PaymentDetails() {
 
   useEffect(() => {
     if (currentPayment) {
+      const aptDate = currentPayment.appointmentDate ?? currentPayment.AppointmentDate;
       setEditForm({
         statusId: currentPayment.statusId || '',
         collectorId: currentPayment.collectorId || '',
@@ -139,6 +143,8 @@ export default function PaymentDetails() {
         isExempt: currentPayment.isExempt || false,
         exemptionReason: currentPayment.exemptionReason || '',
         notes: currentPayment.notes || '',
+        appointmentDate: aptDate ? (typeof aptDate === 'string' ? aptDate.slice(0, 16) : new Date(aptDate).toISOString().slice(0, 16)) : '',
+        appointmentNotes: currentPayment.appointmentNotes ?? currentPayment.AppointmentNotes ?? '',
       });
     }
   }, [currentPayment]);
@@ -158,6 +164,14 @@ export default function PaymentDetails() {
           isExempt: editForm.isExempt,
           exemptionReason: editForm.exemptionReason,
           notes: editForm.notes,
+          ...(editForm.appointmentDate || editForm.appointmentNotes
+            ? {
+                appointmentDate: editForm.appointmentDate ? new Date(editForm.appointmentDate).toISOString() : undefined,
+                appointmentNotes: editForm.appointmentNotes || undefined,
+              }
+            : (currentPayment?.appointmentDate ?? currentPayment?.AppointmentDate ?? currentPayment?.appointmentNotes ?? currentPayment?.AppointmentNotes)
+              ? { clearAppointment: true }
+              : {}),
         },
       })).unwrap();
       setShowEditModal(false);
@@ -1065,6 +1079,41 @@ export default function PaymentDetails() {
               </div>
             </div>
 
+            {/* Payment Appointment */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+              <div className="p-6 border-b border-gray-200">
+                <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                  <CalendarDaysIcon className="h-5 w-5 text-primary-600" />
+                  Payment Appointment
+                </h3>
+              </div>
+              <div className="p-6">
+                {(payment.appointmentDate ?? payment.AppointmentDate) || (payment.appointmentNotes ?? payment.AppointmentNotes) ? (
+                  <div className="space-y-3">
+                    {(payment.appointmentDate ?? payment.AppointmentDate) && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-600 mb-1">Scheduled</label>
+                        <p className="text-sm text-gray-900">
+                          {new Date(payment.appointmentDate ?? payment.AppointmentDate).toLocaleString('en-US', {
+                            dateStyle: 'medium',
+                            timeStyle: 'short',
+                          })}
+                        </p>
+                      </div>
+                    )}
+                    {(payment.appointmentNotes ?? payment.AppointmentNotes) && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-600 mb-1">Notes</label>
+                        <p className="text-sm text-gray-700 whitespace-pre-wrap">{payment.appointmentNotes ?? payment.AppointmentNotes}</p>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-500">No appointment set</p>
+                )}
+              </div>
+            </div>
+
             {/* Discount & Exemption - always shown on payment detail page */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-200">
               <div className="p-6 border-b border-gray-200">
@@ -1197,6 +1246,25 @@ export default function PaymentDetails() {
                   </div>
                 )}
 
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Appointment Date & Time</label>
+                  <input
+                    type="datetime-local"
+                    className="input py-2.5 w-full"
+                    value={editForm.appointmentDate}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, appointmentDate: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Appointment Notes</label>
+                  <textarea
+                    className="input py-2.5 w-full"
+                    rows={2}
+                    value={editForm.appointmentNotes}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, appointmentNotes: e.target.value }))}
+                    placeholder="e.g. Preferred time, contact instructions..."
+                  />
+                </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Notes</label>
                   <textarea

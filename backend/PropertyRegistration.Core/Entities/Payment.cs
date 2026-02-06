@@ -28,6 +28,11 @@ public class Payment : BaseEntity
     public virtual DateTime PaymentDate { get; set; } = DateTime.UtcNow;
     public virtual DateTime? CompletedAt { get; set; }
 
+    /// <summary>Optional appointment date/time for the collector to collect this payment.</summary>
+    public virtual DateTime? AppointmentDate { get; set; }
+    /// <summary>Optional notes for the payment appointment (e.g. preferred time, contact instructions).</summary>
+    public virtual string? AppointmentNotes { get; set; }
+
     // Navigation properties
     public virtual Property Property { get; set; } = null!;
     public virtual User CreatedByUser { get; set; } = null!;

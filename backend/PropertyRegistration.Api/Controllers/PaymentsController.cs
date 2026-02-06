@@ -143,7 +143,7 @@ public class PaymentsController : ControllerBase
             .Fetch(p => p.Status)
             .ToListAsync();
 
-        // Step 3: Project to result
+        // Step 3: Project to result (include PropertyType.Price, AreaSize, PaidAmount, PaymentStatus for All Payments amount display)
         var payments = enrichedPayments
             .Select(p => new
             {
@@ -155,8 +155,11 @@ public class PaymentsController : ControllerBase
                     p.Property.StreetAddress,
                     p.Property.City,
                     p.Property.PlateNumber,
-                    PropertyType = p.Property.PropertyType != null ? new { p.Property.PropertyType.Id, p.Property.PropertyType.Name } : null,
-                    Owner = p.Property.Owner != null ? new { p.Property.Owner.Id, p.Property.Owner.Name, p.Property.Owner.Phone, p.Property.Owner.Email } : null
+                    p.Property.AreaSize,
+                    PropertyType = p.Property.PropertyType != null ? new { p.Property.PropertyType.Id, p.Property.PropertyType.Name, p.Property.PropertyType.Price, p.Property.PropertyType.Unit } : null,
+                    Owner = p.Property.Owner != null ? new { p.Property.Owner.Id, p.Property.Owner.Name, p.Property.Owner.Phone, p.Property.Owner.Email } : null,
+                    p.Property.PaidAmount,
+                    p.Property.PaymentStatus
                 },
                 p.Amount,
                 p.Currency,
@@ -169,6 +172,8 @@ public class PaymentsController : ControllerBase
                 p.ExemptionReason,
                 p.PaymentDate,
                 p.CompletedAt,
+                p.AppointmentDate,
+                p.AppointmentNotes,
                 CreatedBy = p.CreatedByUser != null ? new { p.CreatedByUser.Id, p.CreatedByUser.FirstName, p.CreatedByUser.LastName, p.CreatedByUser.Email } : null,
                 Collector = p.Collector != null ? new { p.Collector.Id, p.Collector.FirstName, p.Collector.LastName, p.Collector.Email } : null,
                 PaymentMethod = p.PaymentMethod != null ? new { p.PaymentMethod.Id, p.PaymentMethod.Name, p.PaymentMethod.Code } : null,
@@ -370,6 +375,8 @@ public class PaymentsController : ControllerBase
                 p.IsExempt,
                 p.ExemptionReason,
                 p.PaymentDate,
+                p.AppointmentDate,
+                p.AppointmentNotes,
                 PaymentMethod = p.PaymentMethod != null ? new { p.PaymentMethod.Id, p.PaymentMethod.Name, p.PaymentMethod.Code } : null,
                 Status = p.Status != null ? new { p.Status.Id, p.Status.Name, p.Status.ColorCode } : null,
                 p.CreatedAt,
@@ -747,6 +754,8 @@ public class PaymentsController : ControllerBase
                 p.ExemptionReason,
                 p.PaymentDate,
                 p.CompletedAt,
+                p.AppointmentDate,
+                p.AppointmentNotes,
                 CreatedBy = new { p.CreatedByUser.Id, p.CreatedByUser.FirstName, p.CreatedByUser.LastName, p.CreatedByUser.Email },
                 Collector = p.Collector != null ? new { p.Collector.Id, p.Collector.FirstName, p.Collector.LastName, p.Collector.Email } : null,
                 CollectorId = p.CollectorId,
@@ -899,6 +908,24 @@ public class PaymentsController : ControllerBase
             if (request.Notes != null)
             {
                 payment.Notes = string.IsNullOrWhiteSpace(request.Notes) ? null : request.Notes.Trim();
+            }
+
+            // Update appointment fields
+            if (request.ClearAppointment == true)
+            {
+                payment.AppointmentDate = null;
+                payment.AppointmentNotes = null;
+            }
+            else
+            {
+                if (request.AppointmentDate.HasValue)
+                {
+                    payment.AppointmentDate = request.AppointmentDate.Value;
+                }
+                if (request.AppointmentNotes != null)
+                {
+                    payment.AppointmentNotes = string.IsNullOrWhiteSpace(request.AppointmentNotes) ? null : request.AppointmentNotes.Trim();
+                }
             }
 
             // Update external reference
@@ -1191,4 +1218,7 @@ public class UpdatePaymentRequest
     public string? ExemptionReason { get; set; }
     public string? Notes { get; set; }
     public string? ExternalReference { get; set; }
+    public DateTime? AppointmentDate { get; set; }
+    public string? AppointmentNotes { get; set; }
+    public bool? ClearAppointment { get; set; }
 }
