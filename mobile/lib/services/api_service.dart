@@ -136,4 +136,32 @@ class ApiService {
   static String getBaseUrl() {
     return _baseUrl;
   }
+
+  /// Lightweight reachability check. Returns true if the server is reachable (any HTTP response),
+  /// false on connection error or timeout. Used to detect mobile data when connectivity_plus fails.
+  static Future<bool> ping({Duration timeout = const Duration(seconds: 6)}) async {
+    try {
+      final response = await _dio.get(
+        '/paymentmethods',
+        options: Options(
+          connectTimeout: timeout,
+          receiveTimeout: timeout,
+          sendTimeout: timeout,
+        ),
+      );
+      return response.statusCode != null && response.statusCode! >= 100;
+    } on DioException catch (e) {
+      if (e.type == DioExceptionType.connectionError ||
+          e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.receiveTimeout ||
+          e.type == DioExceptionType.sendTimeout) {
+        return false;
+      }
+      // 401, 404, etc. mean we reached the server
+      if (e.response != null) return true;
+      return false;
+    } catch (_) {
+      return false;
+    }
+  }
 }

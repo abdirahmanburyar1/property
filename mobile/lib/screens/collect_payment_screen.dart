@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:dio/dio.dart';
+import '../core/payment_utils.dart';
 import '../providers/auth_provider.dart';
 import '../services/api_service.dart';
 import 'payment_receipt_screen.dart';
@@ -129,9 +130,10 @@ class _CollectPaymentScreenState extends State<CollectPaymentScreen> {
       );
 
       if (response.statusCode == 200) {
-        final data = response.data;
-        final List<dynamic> newPayments = data['data'] ?? [];
-        _totalCount = data['totalCount'] ?? 0;
+        final data = response.data as Map<String, dynamic>?;
+        final List<dynamic> newPayments = data?['data'] ?? [];
+        final tc = data?['totalCount'] ?? data?['TotalCount'];
+        _totalCount = tc is int ? tc : (tc != null ? (int.tryParse(tc.toString()) ?? 0) : 0);
 
         setState(() {
           if (refresh) {
@@ -172,17 +174,17 @@ class _CollectPaymentScreenState extends State<CollectPaymentScreen> {
   }
 
   Future<void> _collectPayment(Map<String, dynamic> payment) async {
-    final paymentId = payment['id'];
-    final propertyId = payment['property']?['id'];
-    final requestedAmount = payment['amount'] ?? 0;
+    final pid = paymentId(payment);
+    final propertyId = paymentPropertyId(payment);
+    final requestedAmount = paymentAmount(payment);
     
     setState(() {
-      _collectingPaymentId = paymentId;
+      _collectingPaymentId = pid;
     });
 
     try {
       print('=== COLLECTING PAYMENT (NEW SYSTEM) ===');
-      print('Payment ID: $paymentId');
+      print('Payment ID: $pid');
       print('Property ID: $propertyId');
       print('Requested Amount: $requestedAmount');
       
@@ -225,7 +227,7 @@ class _CollectPaymentScreenState extends State<CollectPaymentScreen> {
               if (mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text('Amount adjusted to remaining balance: ${payment['currency'] ?? 'USD'} ${finalAmount.toStringAsFixed(2)}'),
+                    content: Text('Amount adjusted to remaining balance: ${paymentCurrency(payment)} ${finalAmount.toStringAsFixed(2)}'),
                     backgroundColor: Colors.blue,
                     duration: const Duration(seconds: 3),
                   ),
@@ -246,10 +248,14 @@ class _CollectPaymentScreenState extends State<CollectPaymentScreen> {
       if (paymentMethodsResponse.statusCode == 200) {
         final methods = paymentMethodsResponse.data as List<dynamic>;
         final mobileMoney = methods.firstWhere(
-          (m) => m['code'] == 'MOBILE_MONEY' || m['name']?.toLowerCase().contains('mobile') == true,
+          (m) {
+            final code = m['code'] ?? m['Code'];
+            final name = (m['name'] ?? m['Name'])?.toString().toLowerCase() ?? '';
+            return code == 'MOBILE_MONEY' || name.contains('mobile');
+          },
           orElse: () => methods.isNotEmpty ? methods.first : null,
         );
-        mobileMoneyId = mobileMoney?['id'];
+        mobileMoneyId = (mobileMoney?['id'] ?? mobileMoney?['Id'])?.toString();
       }
 
       if (mobileMoneyId == null) {
@@ -263,10 +269,10 @@ class _CollectPaymentScreenState extends State<CollectPaymentScreen> {
         '/paymentdetails',
         data: {
           'propertyId': propertyId,
-          'paymentId': paymentId,
+          'paymentId': pid,
           'paymentMethodId': mobileMoneyId,
           'amount': finalAmount,
-          'currency': payment['currency'] ?? 'USD',
+          'currency': paymentCurrency(payment),
           'paymentDate': DateTime.now().toIso8601String(),
         },
       );
@@ -591,7 +597,7 @@ class _CollectPaymentScreenState extends State<CollectPaymentScreen> {
                     }
 
                     final payment = _displayedPayments[index];
-                    final isCollecting = _collectingPaymentId == payment['id'];
+                    final isCollecting = _collectingPaymentId == paymentId(payment);
                     
                     return _buildPaymentCard(payment, isCollecting);
                   },
@@ -787,20 +793,8 @@ class _CollectPaymentScreenState extends State<CollectPaymentScreen> {
     );
   }
 
-  /// Expected amount = collected + discount + exemption (conceptually).
-  /// remaining = expected total - paid - discount; 0 if exempt. Used to hide done payments and cap collect.
   double _getRemainingAmount(Map<String, dynamic> payment) {
-    final property = payment['property'] ?? payment['Property'];
-    final propType = property?['propertyType'] ?? property?['PropertyType'];
-    final price = (propType?['price'] ?? propType?['Price'] ?? 0).toDouble();
-    final area = (property?['areaSize'] ?? property?['AreaSize'] ?? 0).toDouble();
-    final expectedTotal = price * area;
-    final paidAmount = (property?['paidAmount'] ?? property?['PaidAmount'] ?? 0).toDouble();
-    final discountAmount = (payment['discountAmount'] ?? payment['DiscountAmount'] ?? 0).toDouble();
-    final isExempt = payment['isExempt'] == true || payment['IsExempt'] == true;
-    if (isExempt) return 0.0;
-    final remaining = expectedTotal - paidAmount - discountAmount;
-    return remaining < 0 ? 0.0 : remaining;
+    return paymentRemainingAmount(payment);
   }
 
   /// Payments to show in the list: when pending tab, only those with remaining > 0 (don't show completed).
@@ -810,30 +804,23 @@ class _CollectPaymentScreenState extends State<CollectPaymentScreen> {
   }
 
   Widget _buildPaymentCard(Map<String, dynamic> payment, bool isCollecting) {
-    final amountRaw = payment['amount'] ?? payment['Amount'];
-    final amount = (amountRaw is num) ? amountRaw.toDouble() : (double.tryParse(amountRaw?.toString() ?? '') ?? 0.0);
-    final currency = payment['currency'] ?? payment['Currency'] ?? 'USD';
-    final property = payment['property'] ?? payment['Property'];
+    final amount = paymentAmount(payment);
+    final currency = paymentCurrency(payment);
+    final property = paymentProperty(payment);
     final status = payment['status'] ?? payment['Status'];
     final paymentDate = payment['paymentDate'] ?? payment['PaymentDate'];
     
-    // Get payment tracking info; support both camelCase and PascalCase from API
-    final propType = property?['propertyType'] ?? property?['PropertyType'];
-    final price = (propType?['price'] ?? propType?['Price'] ?? 0).toDouble();
-    final area = (property?['areaSize'] ?? property?['AreaSize'] ?? 0).toDouble();
-    final expectedAmount = price * area;
-    final paidAmount = (property?['paidAmount'] ?? property?['PaidAmount'] ?? 0).toDouble();
+    final expectedAmount = propertyExpectedAmount(property);
+    final paidAmount = propertyPaidAmount(property);
     final paymentStatus = property?['paymentStatus'] ?? property?['PaymentStatus'] ?? 'Pending';
-    final discountAmount = (payment['discountAmount'] ?? payment['DiscountAmount'] ?? 0).toDouble();
-    final isExempt = payment['isExempt'] == true || payment['IsExempt'] == true;
+    final discountAmount = paymentDiscountAmount(payment);
+    final isExempt = paymentIsExempt(payment);
     var remainingAmount = _getRemainingAmount(payment);
-    // When All Payments: if backend didn't send property totals, show payment amount instead of 0.00
     if (remainingAmount < 0.01 && amount > 0) {
       remainingAmount = amount;
     }
     
-    // Get plate number (handle both camelCase and PascalCase)
-    final plateNumber = property != null 
+    final plateNumber = property != null
         ? (property['plateNumber'] ?? property['PlateNumber'])
         : null;
 
@@ -896,6 +883,23 @@ class _CollectPaymentScreenState extends State<CollectPaymentScreen> {
                             ],
                           ),
                         ),
+                        // Total expected amount (show first)
+                        if (expectedAmount > 0) ...[
+                          const Text(
+                            'Expected',
+                            style: TextStyle(fontSize: 12, color: Colors.grey),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            '$currency ${expectedAmount.toStringAsFixed(2)}',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.grey[800],
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                        ],
                         const Text(
                           'Amount Due',
                           style: TextStyle(fontSize: 12, color: Colors.grey),
@@ -954,7 +958,7 @@ class _CollectPaymentScreenState extends State<CollectPaymentScreen> {
                 ],
               ),
               
-              // Payment Progress (expected = collected + discount + exemption; show only when relevant)
+              // Details: expected, then paid / discount / exemption when present, then remaining
               if (expectedAmount > 0 && (paidAmount > 0 || discountAmount > 0 || isExempt)) ...[
                 const SizedBox(height: 12),
                 Container(
@@ -966,24 +970,38 @@ class _CollectPaymentScreenState extends State<CollectPaymentScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // Total expected (breakdown header)
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
-                            'Paid: $currency ${paidAmount.toStringAsFixed(2)}',
-                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+                          const Text(
+                            'Expected',
+                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.black87),
                           ),
                           Text(
-                            'Remaining: $currency ${remainingAmount.toStringAsFixed(2)}',
-                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+                            '$currency ${expectedAmount.toStringAsFixed(2)}',
+                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
                           ),
                         ],
                       ),
+                      if (paidAmount > 0) ...[
+                        const SizedBox(height: 4),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text('Paid', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
+                            Text('$currency ${paidAmount.toStringAsFixed(2)}', style: TextStyle(fontSize: 12, color: Colors.green[700], fontWeight: FontWeight.w500)),
+                          ],
+                        ),
+                      ],
                       if (discountAmount > 0) ...[
                         const SizedBox(height: 4),
-                        Text(
-                          'Discount: $currency ${discountAmount.toStringAsFixed(2)}',
-                          style: TextStyle(fontSize: 12, color: Colors.green[700], fontWeight: FontWeight.w500),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text('Discount', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
+                            Text('$currency ${discountAmount.toStringAsFixed(2)}', style: TextStyle(fontSize: 12, color: Colors.green[700], fontWeight: FontWeight.w500)),
+                          ],
                         ),
                       ],
                       if (isExempt) ...[
@@ -993,6 +1011,14 @@ class _CollectPaymentScreenState extends State<CollectPaymentScreen> {
                           style: TextStyle(fontSize: 12, color: Colors.green[700], fontWeight: FontWeight.w500),
                         ),
                       ],
+                      const SizedBox(height: 6),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('Remaining', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                          Text('$currency ${remainingAmount.toStringAsFixed(2)}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.orange)),
+                        ],
+                      ),
                       const SizedBox(height: 8),
                       ClipRRect(
                         borderRadius: BorderRadius.circular(4),

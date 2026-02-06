@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import '../core/payment_utils.dart';
 import '../providers/payment_provider.dart';
 
 class PaymentHistoryScreen extends StatefulWidget {
@@ -98,10 +99,9 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
                     padding: const EdgeInsets.all(16),
                     itemCount: _payments.length,
                     itemBuilder: (context, index) {
-                      final payment = _payments[index];
-                      final amountRaw = payment['amount'] ?? payment['Amount'];
-                      final amount = (amountRaw is num) ? amountRaw.toDouble() : (double.tryParse(amountRaw?.toString() ?? '') ?? 0.0);
-                      final currency = payment['currency'] ?? payment['Currency'] ?? 'USD';
+                      final payment = _payments[index] as Map<String, dynamic>;
+                      final amount = paymentAmount(payment);
+                      final currency = paymentCurrency(payment);
                       final paymentMethodObj = payment['paymentMethod'] ?? payment['PaymentMethod'];
                       final paymentMethod = paymentMethodObj is Map
                           ? (paymentMethodObj['name'] ?? paymentMethodObj['Name'] ?? 'N/A').toString()
@@ -117,8 +117,7 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
                               .format(DateTime.parse(paymentDateRaw.toString()))
                           : 'N/A';
 
-                      // Get property details (support both camelCase and PascalCase from API)
-                      final propertyId = (payment['propertyId'] ?? payment['PropertyId'])?.toString();
+                      final propertyId = paymentPropertyId(payment);
                       final property = _properties.firstWhere(
                         (p) => (p['id'] ?? p['Id'])?.toString() == propertyId,
                         orElse: () => {},
@@ -244,9 +243,8 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
   }
 
   void _showPaymentDetails(Map<String, dynamic> payment, Map<String, dynamic> property) {
-    final amountRaw = payment['amount'] ?? payment['Amount'];
-    final amount = (amountRaw is num) ? amountRaw.toDouble() : (double.tryParse(amountRaw?.toString() ?? '') ?? 0.0);
-    final currency = payment['currency'] ?? payment['Currency'] ?? 'USD';
+    final amount = paymentAmount(payment);
+    final currency = paymentCurrency(payment);
     final paymentMethodObj = payment['paymentMethod'] ?? payment['PaymentMethod'];
     final paymentMethod = paymentMethodObj is Map
         ? (paymentMethodObj['name'] ?? paymentMethodObj['Name'] ?? 'N/A').toString()

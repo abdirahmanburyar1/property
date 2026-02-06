@@ -20,6 +20,7 @@ import {
   BanknotesIcon,
   PrinterIcon,
 } from '@heroicons/react/24/outline';
+import PropertyTaxNoticeContent from '../components/PropertyTaxNoticeContent';
 
 interface PropertyStatus {
   id: string;
@@ -53,6 +54,7 @@ export default function PropertyDetails() {
     blobUrl?: string;
   } | null>(null);
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
+  const [showNoticeModal, setShowNoticeModal] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -77,16 +79,17 @@ export default function PropertyDetails() {
     };
   }, [propertyImages, selectedImage]);
 
-  // Handle ESC key to close modal
+  // Handle ESC key to close modals
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isImageModalOpen) {
-        setIsImageModalOpen(false);
+      if (e.key === 'Escape') {
+        if (showNoticeModal) setShowNoticeModal(false);
+        else if (isImageModalOpen) setIsImageModalOpen(false);
       }
     };
     window.addEventListener('keydown', handleEscape);
     return () => window.removeEventListener('keydown', handleEscape);
-  }, [isImageModalOpen]);
+  }, [isImageModalOpen, showNoticeModal]);
 
   const loadPropertyImages = async (propertyId: string) => {
     try {
@@ -681,15 +684,14 @@ export default function PropertyDetails() {
                 </div>
               </div>
               <div className="mt-4 pt-4 border-t border-gray-100">
-                <a
-                  href={`/properties/${id}/notice`}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <button
+                  type="button"
+                  onClick={() => setShowNoticeModal(true)}
                   className="inline-flex items-center gap-2 rounded-lg bg-amber-100 px-4 py-2 text-sm font-semibold text-amber-800 hover:bg-amber-200 transition"
                 >
                   <PrinterIcon className="h-5 w-5" />
                   Print notice (Ogaysiis — Lacagta ku waajibtay guriga)
-                </a>
+                </button>
                 <p className="mt-1 text-xs text-gray-500">Waraaq ogaysiis ah oo muujinaya lacagta canshuurta ee la bixinayo. A receipt is issued when payment is collected.</p>
               </div>
             </div>
@@ -833,6 +835,48 @@ export default function PropertyDetails() {
                 }}
               />
               <div className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-lg bg-black/60 px-4 py-2 text-sm text-white">{selectedImage.originalFileName}</div>
+            </div>
+          )}
+
+          {/* Property tax notice modal (printable) */}
+          {showNoticeModal && property && (
+            <div id="property-tax-notice-modal" className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" role="dialog" aria-modal="true" aria-label="Property tax notice">
+              <style>{`
+                @media print {
+                  body * { visibility: hidden !important; }
+                  #property-tax-notice-modal,
+                  #property-tax-notice-modal * { visibility: visible !important; }
+                  #property-tax-notice-modal { position: fixed !important; left: 0 !important; top: 0 !important; right: 0 !important; bottom: 0 !important; background: white !important; padding: 0 !important; align-items: flex-start !important; overflow: visible !important; }
+                  .property-tax-notice-no-print { display: none !important; }
+                  #property-tax-notice-modal .property-tax-notice-printable { box-shadow: none !important; margin: 0 !important; max-width: 100% !important; }
+                }
+              `}</style>
+              <div className="bg-white rounded-xl shadow-xl max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
+                <div className="property-tax-notice-no-print flex items-center justify-between gap-3 p-4 border-b border-gray-200 shrink-0">
+                  <h3 className="text-lg font-semibold text-gray-900">Property tax notice</h3>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => window.print()}
+                      className="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700"
+                    >
+                      <PrinterIcon className="h-5 w-5" />
+                      Print
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowNoticeModal(false)}
+                      className="rounded-lg border border-gray-300 bg-white p-2 text-gray-700 hover:bg-gray-50"
+                      aria-label="Close"
+                    >
+                      <XCircleIcon className="h-5 w-5" />
+                    </button>
+                  </div>
+                </div>
+                <div className="overflow-y-auto p-4 property-tax-notice-printable">
+                  <PropertyTaxNoticeContent property={property} />
+                </div>
+              </div>
             </div>
           )}
 
