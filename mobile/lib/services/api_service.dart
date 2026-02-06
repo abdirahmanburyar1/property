@@ -144,7 +144,6 @@ class ApiService {
       final response = await _dio.get(
         '/paymentmethods',
         options: Options(
-          connectTimeout: timeout,
           receiveTimeout: timeout,
           sendTimeout: timeout,
         ),

@@ -85,7 +85,7 @@ export default function PropertyTaxNotice() {
             Print notice
           </button>
         </div>
-        <PropertyTaxNoticeContent property={property} />
+        <PropertyTaxNoticeContent property={property} year={new Date().getFullYear()} />
       </div>
     </>
   );

@@ -35,6 +35,7 @@ const navigation = [
   { name: 'Sections', href: '/sections', icon: FolderIcon },
   { name: 'SubSections', href: '/subsections', icon: FolderOpenIcon },
   { name: 'Payments', href: '/payments', icon: CreditCardIcon },
+  { name: 'Property Notices', href: '/property-notices', icon: DocumentTextIcon },
   { name: 'Users', href: '/users', icon: UserGroupIcon },
   { name: 'Roles', href: '/roles', icon: ShieldCheckIcon },
   { name: 'Permissions', href: '/permissions', icon: KeyIcon },

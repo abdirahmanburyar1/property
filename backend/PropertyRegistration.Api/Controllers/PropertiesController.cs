@@ -247,17 +247,49 @@ public class PropertiesController : ControllerBase
         [FromQuery] string? plateNumber = null,
         [FromQuery] string? ownerPhone = null,
         [FromQuery] string? responsiblePhone = null,
+        [FromQuery] Guid? sectionId = null,
+        [FromQuery] Guid? subSectionId = null,
+        [FromQuery] Guid? kontontriyeId = null,
+        [FromQuery] bool? hasOutstandingOnly = null,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20)
     {
         Console.WriteLine("=== GET PROPERTIES REQUEST ===");
         Console.WriteLine($"Filters - City: {city}, StatusId: {statusId}, PropertyTypeId: {propertyTypeId}");
+        Console.WriteLine($"Filters - SectionId: {sectionId}, SubSectionId: {subSectionId}, KontontriyeId: {kontontriyeId}, HasOutstandingOnly: {hasOutstandingOnly}");
         Console.WriteLine($"Filters - OwnerName: {ownerName}, PlateNumber: {plateNumber}");
         Console.WriteLine($"Filters - OwnerPhone: {ownerPhone}, ResponsiblePhone: {responsiblePhone}");
         
         using var session = _sessionFactoryProvider.SessionFactory.OpenSession();
 
         var query = session.Query<Property>();
+
+        if (sectionId.HasValue)
+        {
+            query = query.Where(p => p.SectionId == sectionId.Value);
+            Console.WriteLine($"Applied sectionId filter: {sectionId.Value}");
+        }
+
+        if (subSectionId.HasValue)
+        {
+            query = query.Where(p => p.SubSectionId == subSectionId.Value);
+            Console.WriteLine($"Applied subSectionId filter: {subSectionId.Value}");
+        }
+
+        if (kontontriyeId.HasValue)
+        {
+            query = query.Where(p => p.KontontriyeId == kontontriyeId.Value);
+            Console.WriteLine($"Applied kontontriyeId (collector) filter: {kontontriyeId.Value}");
+        }
+
+        // Only properties with outstanding amount (expected - paid > 0); for tax notices
+        if (hasOutstandingOnly == true)
+        {
+            query = query.Where(p => p.PropertyType != null &&
+                (p.PropertyType.Price * p.AreaSize - (p.PaidAmount)) > 0 &&
+                p.PaymentStatus != "Paid");
+            Console.WriteLine("Applied hasOutstandingOnly filter (notice-relevant properties only)");
+        }
 
         // Apply filters
         if (!string.IsNullOrWhiteSpace(city))

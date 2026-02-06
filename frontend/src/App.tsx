@@ -21,6 +21,7 @@ import Sections from './pages/Sections';
 import SubSections from './pages/SubSections';
 import Reports from './pages/Reports';
 import PropertyTaxNotice from './pages/PropertyTaxNotice';
+import PropertyNotices from './pages/PropertyNotices';
 
 function App() {
   const dispatch = useAppDispatch();
@@ -104,6 +105,16 @@ function App() {
             <ProtectedRoute>
               <MainLayout>
                 <PropertyTaxNotice />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/property-notices"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <PropertyNotices />
               </MainLayout>
             </ProtectedRoute>
           }

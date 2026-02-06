@@ -874,7 +874,7 @@ export default function PropertyDetails() {
                   </div>
                 </div>
                 <div className="overflow-y-auto p-4 property-tax-notice-printable">
-                  <PropertyTaxNoticeContent property={property} />
+                  <PropertyTaxNoticeContent property={property} year={new Date().getFullYear()} />
                 </div>
               </div>
             </div>
