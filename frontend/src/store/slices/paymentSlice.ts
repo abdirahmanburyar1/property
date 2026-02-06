@@ -23,6 +23,10 @@ export interface Payment {
   exemptionReason?: string;
   paymentDate: string;
   completedAt?: string;
+  appointmentDate?: string;
+  AppointmentDate?: string;
+  appointmentNotes?: string;
+  AppointmentNotes?: string;
   createdBy?: { id: string; firstName: string; lastName: string; email?: string; };
   collector?: { id: string; firstName: string; lastName: string; email?: string; };
   collectorId?: string;
